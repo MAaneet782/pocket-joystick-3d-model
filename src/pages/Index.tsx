@@ -81,73 +81,74 @@ const Index = () => {
                     <p className="text-md text-gray-400 max-w-3xl mx-auto">Explore the modular design and ergonomic features of the next-generation mobile gaming controller.</p>
                 </div>
 
-                {/* Controls */}
-                <div className="flex flex-wrap justify-center gap-3 md:gap-4 p-4 md:p-6 bg-gray-800 rounded-[20px] border border-gray-700 mb-10 shadow-xl">
-                    <Button 
-                        viewKey="default" 
-                        label="Default View" 
-                        onClick={() => setView('default')} 
-                        isActive={currentView === 'default'} 
-                        icon="🎯" 
-                    />
-                    <Button 
-                        viewKey="front" 
-                        label="Front View" 
-                        onClick={() => setView('front')} 
-                        isActive={currentView === 'front'} 
-                        icon="📱" 
-                    />
-                    <Button 
-                        viewKey="back" 
-                        label="Back View" 
-                        onClick={() => setView('back')} 
-                        isActive={currentView === 'back'} 
-                        icon="🔙" 
-                    />
-                    <Button 
-                        viewKey="top" 
-                        label="Top View" 
-                        onClick={() => setView('top')} 
-                        isActive={currentView === 'top'} 
-                        icon="⬆️" 
-                    />
-                    <Button 
-                        viewKey="side" 
-                        label="Side View" 
-                        onClick={() => setView('side')} 
-                        isActive={currentView === 'side'} 
-                        icon="↔️" 
-                    />
-                    <Button 
-                        viewKey="explode" 
-                        label={isExploded ? 'Assemble' : 'Explode View'} 
-                        onClick={toggleExploded} 
-                        isActive={isExploded} 
-                        icon={isExploded ? '🔧' : '💥'} 
-                    />
-                    <Button 
-                        viewKey="phone" 
-                        label={showPhone ? 'Hide Phone' : 'Show Phone'} 
-                        onClick={togglePhone} 
-                        isActive={!showPhone} 
-                        icon="📱" 
-                    />
-                    <Button 
-                        viewKey="rotate" 
-                        label={isRotating ? 'Stop Rotation' : 'Auto Rotate'} 
-                        onClick={toggleRotation} 
-                        isActive={isRotating} 
-                        icon={isRotating ? '⏸️' : '🔄'} 
-                    />
-                    <Button 
-                        viewKey="reset" 
-                        label="Reset All" 
-                        onClick={resetView} 
-                        isActive={false} 
-                        icon="🔁" 
-                    />
+                {/* Controls - Made Sticky */}
+                <div className="sticky top-0 z-20 py-4 bg-gray-900/90 backdrop-blur-sm -mx-4 md:-mx-8 lg:-mx-12 px-4 md:px-8 lg:px-12">
+                    <div className="flex flex-wrap justify-center gap-3 md:gap-4 p-4 md:p-6 bg-gray-800 rounded-[20px] border border-gray-700 shadow-xl">
+                        <Button 
+                            viewKey="default" 
+                            label="Default View" 
+                            onClick={() => setView('default')} 
+                            isActive={currentView === 'default'} 
+                            icon="🎯" 
+                        />
+                        <Button 
+                            viewKey="front" 
+                            label="Front View" 
+                            onClick={() => setView('front')} 
+                            isActive={currentView === 'front'} 
+                            icon="📱" 
+                        />
+                        <Button 
+                            viewKey="back" 
+                            label="Back View" 
+                            onClick={() => setView('back')} 
+                            isActive={currentView === 'back'} 
+                            icon="🔙" 
+                        />
+                        <Button 
+                            viewKey="top" 
+                            label="Top View" 
+                            onClick={() => setView('top')} 
+                            isActive={currentView === 'top'} 
+                            icon="⬆️" 
+                        />
+                        <Button 
+                            viewKey="side" 
+                            label="Side View" 
+                            onClick={() => setView('side')} 
+                            isActive={currentView === 'side'} 
+                            icon="↔️" 
+                        />
+                        <Button 
+                            viewKey="explode" 
+                            label={isExploded ? 'Assemble' : 'Explode View'} 
+                            onClick={toggleExploded} 
+                            isActive={isExploded} 
+                            icon={isExploded ? '🔧' : '💥'} 
+                        />
+                        <Button 
+                            viewKey="phone" 
+                            label={showPhone ? 'Hide Phone' : 'Show Phone'} 
+                            onClick={togglePhone} 
+                            isActive={!showPhone} 
+                            icon="📱" 
+                        />
+                        <Button 
+                            viewKey="rotate" 
+                            label={isRotating ? 'Stop Rotation' : 'Auto Rotate'} 
+                            onClick={toggleRotation} 
+                            isActive={isRotating} 
+                            icon={isRotating ? '⏸️' : '🔄'} 
+                        />
+                        <Button 
+                            viewKey="reset" 
+                            label="Reset All" 
+                            onClick={resetView} 
+                            isActive={false} 
+                            icon="🔁" 
+                        />
+                    </div>
                 </div>
-
                 {/* 3D Canvas Container */}
                 <div className="relative bg-gray-800 rounded-[30px] p-4 md:p-8 lg:p-12 border border-gray-700 mb-10 shadow-2xl min-h-[850px] flex items-center justify-center">
                     {isLoading && (
