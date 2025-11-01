@@ -82,7 +82,7 @@ const Index = () => {
                 </div>
 
                 {/* Controls */}
-                <div className="flex flex-wrap justify-center gap-3 md:gap-4 p-4 md:p-6 bg-gray-800 rounded-[20px] border border-gray-700 mb-10 shadow-xl">
+                <div className="flex flex-wrap justify-center gap-3 md:gap-4 p-4 md:p-6 bg-gray-800 rounded-[20px] border border-gray-700 mb-6 shadow-xl">
                     <Button 
                         viewKey="default" 
                         label="Default View" 
@@ -147,6 +147,15 @@ const Index = () => {
                         icon="🔁" 
                     />
                 </div>
+
+                {/* Interactive 3D Model Title */}
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-6" style={{ 
+                    background: 'linear-gradient(90deg, #00C9FF, #92FE9D)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                }}>
+                    Interactive 3D Model Viewer
+                </h2>
 
                 {/* 3D Canvas Container */}
                 <div className="relative bg-gray-800 rounded-[30px] border border-gray-700 mb-10 shadow-2xl min-h-[70vh] xl:min-h-[850px] flex items-center justify-center overflow-hidden">
