@@ -149,7 +149,7 @@ const Index = () => {
                 </div>
 
                 {/* 3D Canvas Container */}
-                <div className="relative bg-gray-800 rounded-[30px] p-4 md:p-8 lg:p-12 border border-gray-700 mb-10 shadow-2xl min-h-[70vh] xl:min-h-[850px] flex items-center justify-center">
+                <div className="relative bg-gray-800 rounded-[30px] border border-gray-700 mb-10 shadow-2xl min-h-[70vh] xl:min-h-[850px] flex items-center justify-center overflow-hidden">
                     {isLoading && (
                         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl text-[#00C9FF] font-bold z-10 flex flex-col items-center">
                             <div className="text-5xl mb-2 animate-spin-slow">🎮</div>
