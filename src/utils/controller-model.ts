@@ -294,7 +294,7 @@ export function createControllerModel(): ControllerGroups {
     controller.add(rightGrip);
     controller.add(triggerGroup);
 
-    controller.position.y = 0;
+    controller.position.y = 1;
 
     return { controller, phoneGroup, leftGrip, rightGrip, triggerGroup };
 }

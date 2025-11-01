@@ -52,7 +52,7 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
         const aspect = canvas.clientWidth / canvas.clientHeight;
         const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
         camera.position.copy(CAMERA_POSITIONS.default);
-        camera.lookAt(0, 0, 0);
+        camera.lookAt(0, 1, 0);
         cameraRef.current = camera;
 
         // Renderer
@@ -204,7 +204,7 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
         if (camera) {
             const targetPosition = CAMERA_POSITIONS[view];
             camera.position.copy(targetPosition);
-            camera.lookAt(0, 0, 0);
+            camera.lookAt(0, 1, 0);
         }
     }, [view]);
 
