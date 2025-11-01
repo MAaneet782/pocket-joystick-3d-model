@@ -1,12 +1,9 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import * as ControlsModule from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { cn } from '@/lib/utils';
 import { createControllerModel, ControllerGroups } from '@/utils/controller-model';
 import ModelControls from './ModelControls';
-
-// Extract OrbitControls class from the imported module to resolve TS error
-const OrbitControls = ControlsModule.OrbitControls;
 
 // Explosion offsets and speed for smooth transition
 const EXPLOSION_OFFSET_X = 2.5;
@@ -25,12 +22,23 @@ const targetPositions = {
     triggerGroup: new THREE.Vector3(0, 0, 0),
 };
 
+// Highlight Material (Orange emissive)
+const highlightMat = new THREE.MeshStandardMaterial({
+    color: 0xffa500, 
+    emissive: 0xffa500,
+    emissiveIntensity: 0.5,
+    metalness: 0.1,
+    roughness: 0.1,
+    transparent: true,
+    opacity: 0.8
+});
+
 const ThreeDViewer: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-    const controlsRef = useRef<ControlsModule.OrbitControls | null>(null);
+    const controlsRef = useRef<OrbitControls | null>(null);
     const modelRef = useRef<ControllerGroups | null>(null);
     
     const [isExploded, setIsExploded] = React.useState(false);
@@ -58,17 +66,16 @@ const ThreeDViewer: React.FC = () => {
         const width = canvas.clientWidth;
         const height = canvas.clientHeight;
 
-        // 1. Scene
+        // 1. Scene, Camera, Renderer, Controls, Lighting, Ground Plane (omitted for brevity, assumed functional)
+        
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xf0f0f0); 
         sceneRef.current = scene;
 
-        // 2. Camera
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
         camera.position.set(0, 0, 6);
         cameraRef.current = camera;
 
-        // 3. Renderer
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -76,7 +83,6 @@ const ThreeDViewer: React.FC = () => {
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         rendererRef.current = renderer;
 
-        // 4. Controls
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
@@ -85,7 +91,6 @@ const ThreeDViewer: React.FC = () => {
         controls.maxDistance = 15;
         controlsRef.current = controls;
 
-        // 5. Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
@@ -102,7 +107,6 @@ const ThreeDViewer: React.FC = () => {
         directionalLight.shadow.camera.bottom = -10;
         scene.add(directionalLight);
 
-        // 6. Ground Plane (for shadows)
         const planeGeo = new THREE.PlaneGeometry(20, 20);
         const planeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
         const plane = new THREE.Mesh(planeGeo, planeMat);
@@ -116,21 +120,106 @@ const ThreeDViewer: React.FC = () => {
         scene.add(controllerModel.controller);
         modelRef.current = controllerModel;
         
-        // Ensure initial target positions are set based on the model's initial state
         updateTargetPositions(isExploded);
 
+        // --- Interaction Setup (Raycasting) ---
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let currentHighlightedGroup: THREE.Group | null = null;
+        
+        const originalMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+        const groupsToInteract = [
+            controllerModel.phoneGroup,
+            controllerModel.leftGrip,
+            controllerModel.rightGrip,
+            controllerModel.triggerGroup
+        ];
+
+        // Store original materials
+        groupsToInteract.forEach(group => {
+            group.traverse(child => {
+                if (child instanceof THREE.Mesh) {
+                    originalMaterials.set(child, child.material);
+                }
+            });
+        });
+
+        const applyHighlight = (group: THREE.Group) => {
+            if (currentHighlightedGroup === group) return;
+
+            // Remove highlight from previous group
+            if (currentHighlightedGroup) {
+                removeHighlight();
+            }
+
+            // Apply highlight to new group
+            group.traverse(child => {
+                if (child instanceof THREE.Mesh && originalMaterials.has(child)) {
+                    child.material = highlightMat;
+                }
+            });
+            currentHighlightedGroup = group;
+        };
+
+        const removeHighlight = () => {
+            if (currentHighlightedGroup) {
+                currentHighlightedGroup.traverse(child => {
+                    if (child instanceof THREE.Mesh && originalMaterials.has(child)) {
+                        child.material = originalMaterials.get(child)!;
+                    }
+                });
+                currentHighlightedGroup = null;
+            }
+        };
+
+        const onPointerMove = (event: PointerEvent) => {
+            const rect = canvas.getBoundingClientRect();
+            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        };
+
+        canvas.addEventListener('pointermove', onPointerMove);
 
         // 8. Animation Loop
         const animate = () => {
             requestAnimationFrame(animate);
             controls.update();
             
-            // Lerp model groups towards target positions for smooth transitions
+            // Lerp model groups towards target positions
             if (modelRef.current) {
                 modelRef.current.phoneGroup.position.lerp(targetPositions.phone, LERP_SPEED);
                 modelRef.current.leftGrip.position.lerp(targetPositions.leftGrip, LERP_SPEED);
                 modelRef.current.rightGrip.position.lerp(targetPositions.rightGrip, LERP_SPEED);
                 modelRef.current.triggerGroup.position.lerp(targetPositions.triggerGroup, LERP_SPEED);
+            }
+
+            // Raycasting check
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObjects(controllerModel.controller.children, true);
+
+            if (intersects.length > 0) {
+                const intersectedMesh = intersects[0].object as THREE.Mesh;
+                
+                // Find the top-level group (phoneGroup, leftGrip, rightGrip, triggerGroup)
+                let parentGroup: THREE.Group | null = null;
+                let current = intersectedMesh.parent;
+                
+                // Traverse up the hierarchy until we hit one of the main interactive groups or the controller root
+                while (current && current !== controllerModel.controller) {
+                    if (groupsToInteract.includes(current as THREE.Group)) {
+                        parentGroup = current as THREE.Group;
+                        break;
+                    }
+                    current = current.parent;
+                }
+
+                if (parentGroup) {
+                    applyHighlight(parentGroup);
+                } else {
+                    removeHighlight();
+                }
+            } else {
+                removeHighlight();
             }
 
             renderer.render(scene, camera);
@@ -150,6 +239,7 @@ const ThreeDViewer: React.FC = () => {
 
         return () => {
             window.removeEventListener('resize', handleResize);
+            canvas.removeEventListener('pointermove', onPointerMove);
             renderer.dispose();
             controls.dispose();
         };
@@ -171,7 +261,6 @@ const ThreeDViewer: React.FC = () => {
     const handleResetCamera = useCallback(() => {
         if (controlsRef.current && cameraRef.current) {
             controlsRef.current.reset();
-            // Ensure camera is reset to initial position (0, 0, 6)
             cameraRef.current.position.set(0, 0, 6);
             cameraRef.current.lookAt(0, 0, 0);
         }

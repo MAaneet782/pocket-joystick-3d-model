@@ -7,7 +7,7 @@ const IndexPage: React.FC = () => {
     <div className="container mx-auto p-4 min-h-screen flex flex-col">
       <h1 className="text-3xl font-bold mb-2 text-center">3D Controller Model Viewer</h1>
       <p className="text-center mb-4 text-gray-600">
-        Explore the model using Orbit Controls (drag/scroll) and the interactive buttons.
+        Explore the model using Orbit Controls (drag/scroll), the interactive buttons, and **hover over components to highlight them**.
       </p>
       <div className="flex-grow">
         <ThreeDViewer />
