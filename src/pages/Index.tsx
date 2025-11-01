@@ -65,7 +65,7 @@ const Index = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100 overflow-x-hidden">
+        <div className="min-h-screen text-gray-100 overflow-x-hidden">
             {isLoading && (
                 <div className="fixed top-0 left-0 w-full h-full bg-gray-900 z-50 flex flex-col items-center justify-center">
                     <div className="text-5xl mb-4 animate-spin-slow">🎮</div>
