@@ -21,7 +21,7 @@ const phoneMat = new THREE.MeshStandardMaterial({
 const screenMat = new THREE.MeshStandardMaterial({ 
     color: 0x00C9FF, 
     emissive: 0x00C9FF, 
-    emissiveIntensity: 0.3,
+    emissiveIntensity: 0.8, // Increased intensity for bloom
     metalness: 0.1,
     roughness: 0.1
 });
@@ -48,8 +48,11 @@ const triggerMat = new THREE.MeshStandardMaterial({
     metalness: 0.3,
     roughness: 0.4
 });
-const lightMat = new THREE.MeshBasicMaterial({ 
+// Updated light material to be emissive for bloom effect
+const lightMat = new THREE.MeshStandardMaterial({ 
     color: 0x00ff88,
+    emissive: 0x00ff88,
+    emissiveIntensity: 1.5,
     transparent: true,
     opacity: 0.9
 });
@@ -168,7 +171,7 @@ export function createControllerModel(): ControllerGroups {
     const rgbRingMat = new THREE.MeshStandardMaterial({ 
         color: 0x00ff88,
         emissive: 0x00ff88,
-        emissiveIntensity: 0.5
+        emissiveIntensity: 1.2 // Increased intensity for bloom
     });
     const rgbRing = new THREE.Mesh(ringGeo, rgbRingMat);
     rgbRing.rotation.x = Math.PI / 2;
@@ -210,8 +213,11 @@ export function createControllerModel(): ControllerGroups {
         controller.add(button);
 
         // Button letter labels (simplified as a white circle for now, actual text rendering is complex)
-        const labelMat = new THREE.MeshBasicMaterial({ 
+        // Updated label material to be emissive for a soft glow
+        const labelMat = new THREE.MeshStandardMaterial({ 
             color: 0xffffff,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.3,
             transparent: true,
             opacity: 0.95
         });
@@ -228,7 +234,7 @@ export function createControllerModel(): ControllerGroups {
     const rightRgbRingMat = new THREE.MeshStandardMaterial({ 
         color: 0xff0088,
         emissive: 0xff0088,
-        emissiveIntensity: 0.5
+        emissiveIntensity: 1.2 // Increased intensity for bloom
     });
     const rightRgbRing = new THREE.Mesh(ringGeo, rightRgbRingMat);
     rightRgbRing.rotation.x = Math.PI / 2;
