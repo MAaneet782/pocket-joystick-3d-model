@@ -45,6 +45,9 @@ const ThreeDViewer: React.FC = () => {
     const modelRef = useRef<ControllerGroups | null>(null);
     
     const [isExploded, setIsExploded] = React.useState(false);
+    const [isPhoneVisible, setIsPhoneVisible] = React.useState(true);
+    const [isControlsVisible, setIsControlsVisible] = React.useState(true);
+
 
     const updateTargetPositions = useCallback((exploded: boolean) => {
         if (!modelRef.current) return;
@@ -72,7 +75,7 @@ const ThreeDViewer: React.FC = () => {
         // 1. Scene, Camera, Renderer, Controls, Lighting, Ground Plane (omitted for brevity, assumed functional)
         
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f0f0); 
+        scene.background = new THREE.Color(0x1a1a1a); // Darker background for dark theme
         sceneRef.current = scene;
 
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
@@ -111,7 +114,7 @@ const ThreeDViewer: React.FC = () => {
         scene.add(directionalLight);
 
         const planeGeo = new THREE.PlaneGeometry(20, 20);
-        const planeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.DoubleSide });
+        const planeMat = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide }); // Darker plane
         const plane = new THREE.Mesh(planeGeo, planeMat);
         plane.rotation.x = -Math.PI / 2;
         plane.position.y = -1.5;
@@ -135,7 +138,8 @@ const ThreeDViewer: React.FC = () => {
             controllerModel.phoneGroup,
             controllerModel.leftGrip,
             controllerModel.rightGrip,
-            controllerModel.triggerGroup
+            controllerModel.triggerGroup,
+            controllerModel.controlElementsGroup, // Include new group for interaction
         ];
 
         // Store original materials
@@ -194,6 +198,10 @@ const ThreeDViewer: React.FC = () => {
                 modelRef.current.leftGrip.position.lerp(targetPositions.leftGrip, LERP_SPEED);
                 modelRef.current.rightGrip.position.lerp(targetPositions.rightGrip, LERP_SPEED);
                 modelRef.current.triggerGroup.position.lerp(targetPositions.triggerGroup, LERP_SPEED);
+
+                // Apply visibility based on state
+                modelRef.current.phoneGroup.visible = isPhoneVisible;
+                modelRef.current.controlElementsGroup.visible = isControlsVisible;
             }
 
             // Raycasting check
@@ -203,7 +211,7 @@ const ThreeDViewer: React.FC = () => {
             if (intersects.length > 0) {
                 const intersectedMesh = intersects[0].object as THREE.Mesh;
                 
-                // Find the top-level group (phoneGroup, leftGrip, rightGrip, triggerGroup)
+                // Find the top-level group (phoneGroup, leftGrip, rightGrip, triggerGroup, controlElementsGroup)
                 let parentGroup: THREE.Group | null = null;
                 let current = intersectedMesh.parent;
                 
@@ -216,7 +224,7 @@ const ThreeDViewer: React.FC = () => {
                     current = current.parent;
                 }
 
-                if (parentGroup) {
+                if (parentGroup && parentGroup.visible) {
                     applyHighlight(parentGroup);
                 } else {
                     removeHighlight();
@@ -246,7 +254,7 @@ const ThreeDViewer: React.FC = () => {
             renderer.dispose();
             controls.dispose();
         };
-    }, [isExploded, updateTargetPositions]);
+    }, [isExploded, updateTargetPositions, isPhoneVisible, isControlsVisible]);
 
     useEffect(() => {
         const cleanup = setupScene();
@@ -268,6 +276,15 @@ const ThreeDViewer: React.FC = () => {
             cameraRef.current.lookAt(0, 0, 0);
         }
     }, []);
+    
+    const handleTogglePhoneVisibility = useCallback(() => {
+        setIsPhoneVisible(prev => !prev);
+    }, []);
+
+    const handleToggleControlsVisibility = useCallback(() => {
+        setIsControlsVisible(prev => !prev);
+    }, []);
+
 
     return (
         <div className="flex flex-col lg:flex-row gap-6 w-full p-4">
@@ -275,7 +292,7 @@ const ThreeDViewer: React.FC = () => {
                 ref={canvasRef} 
                 id="canvas3d" 
                 className={cn(
-                    "w-full h-[80vh] max-w-4xl border rounded-lg shadow-lg bg-gray-50 flex-grow"
+                    "w-full h-[80vh] max-w-4xl border rounded-lg shadow-lg bg-background flex-grow"
                 )}
             />
             <div className="lg:w-1/4 w-full">
@@ -283,6 +300,10 @@ const ThreeDViewer: React.FC = () => {
                     isExploded={isExploded}
                     onToggleExplosion={handleToggleExplosion}
                     onResetCamera={handleResetCamera}
+                    isPhoneVisible={isPhoneVisible}
+                    onTogglePhoneVisibility={handleTogglePhoneVisibility}
+                    isControlsVisible={isControlsVisible}
+                    onToggleControlsVisibility={handleToggleControlsVisibility}
                 />
             </div>
         </div>

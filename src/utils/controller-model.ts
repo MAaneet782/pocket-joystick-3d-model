@@ -101,6 +101,7 @@ export interface ControllerGroups {
     leftGrip: THREE.Group;
     rightGrip: THREE.Group;
     triggerGroup: THREE.Group;
+    controlElementsGroup: THREE.Group; // Added new group
 }
 
 export function createControllerModel(): ControllerGroups {
@@ -111,6 +112,7 @@ export function createControllerModel(): ControllerGroups {
     const leftGrip = new THREE.Group();
     const rightGrip = new THREE.Group();
     const triggerGroup = new THREE.Group();
+    const controlElementsGroup = new THREE.Group(); // Initialize new group
 
     // --- Phone ---
     const phone = new THREE.Mesh(phoneGeo, phoneMat);
@@ -162,7 +164,7 @@ export function createControllerModel(): ControllerGroups {
     analogBase.rotation.x = Math.PI / 2;
     analogBase.position.set(-1.6, -0.4, 0.55);
     analogBase.castShadow = true;
-    controller.add(analogBase);
+    controlElementsGroup.add(analogBase);
 
     // RGB ring
     const rgbRingMat = new THREE.MeshStandardMaterial({ 
@@ -173,28 +175,28 @@ export function createControllerModel(): ControllerGroups {
     const rgbRing = new THREE.Mesh(ringGeo, rgbRingMat);
     rgbRing.rotation.x = Math.PI / 2;
     rgbRing.position.set(-1.6, -0.4, 0.55);
-    controller.add(rgbRing);
+    controlElementsGroup.add(rgbRing);
 
     const analogStick = new THREE.Mesh(analogStickGeo, analogStickMat);
     analogStick.position.set(-1.6, -0.4, 0.72);
     analogStick.scale.set(1, 1, 0.75);
     analogStick.castShadow = true;
-    controller.add(analogStick);
+    controlElementsGroup.add(analogStick);
 
     // D-PAD
     const dpad = new THREE.Mesh(dpadGeo, dpadMat);
     dpad.rotation.x = Math.PI / 2;
     dpad.position.set(-1.6, 0.5, 0.55);
     dpad.castShadow = true;
-    controller.add(dpad);
+    controlElementsGroup.add(dpad);
 
     const hCross = new THREE.Mesh(crossH, crossMat);
     hCross.position.set(-1.6, 0.5, 0.62);
-    controller.add(hCross);
+    controlElementsGroup.add(hCross);
     
     const vCross = new THREE.Mesh(crossV, crossMat);
     vCross.position.set(-1.6, 0.5, 0.62);
-    controller.add(vCross);
+    controlElementsGroup.add(vCross);
 
     // --- Right Controls (ABXY) ---
     buttonsConfig.forEach(btn => {
@@ -207,7 +209,7 @@ export function createControllerModel(): ControllerGroups {
         button.rotation.x = Math.PI / 2;
         button.position.set(btn.x, btn.y, 0.6);
         button.castShadow = true;
-        controller.add(button);
+        controlElementsGroup.add(button);
 
         // Button letter labels (simplified as a white circle for now, actual text rendering is complex)
         const labelMat = new THREE.MeshBasicMaterial({ 
@@ -217,13 +219,13 @@ export function createControllerModel(): ControllerGroups {
         });
         const label = new THREE.Mesh(labelGeo, labelMat);
         label.position.set(btn.x, btn.y, 0.68);
-        controller.add(label);
+        controlElementsGroup.add(label);
     });
 
     // Right Analog Stick
     const rightAnalogBase = analogBase.clone();
     rightAnalogBase.position.set(1.6, -0.4, 0.55);
-    controller.add(rightAnalogBase);
+    controlElementsGroup.add(rightAnalogBase);
 
     const rightRgbRingMat = new THREE.MeshStandardMaterial({ 
         color: 0xff0088,
@@ -233,11 +235,11 @@ export function createControllerModel(): ControllerGroups {
     const rightRgbRing = new THREE.Mesh(ringGeo, rightRgbRingMat);
     rightRgbRing.rotation.x = Math.PI / 2;
     rightRgbRing.position.set(1.6, -0.4, 0.55);
-    controller.add(rightRgbRing);
+    controlElementsGroup.add(rightRgbRing);
 
     const rightAnalogStick = analogStick.clone();
     rightAnalogStick.position.set(1.6, -0.4, 0.72);
-    controller.add(rightAnalogStick);
+    controlElementsGroup.add(rightAnalogStick);
 
     // --- Top Triggers ---
     // L1 (shoulder button)
@@ -276,19 +278,20 @@ export function createControllerModel(): ControllerGroups {
     const menuBtn = new THREE.Mesh(centerBtnGeo, centerBtnMat);
     menuBtn.rotation.x = Math.PI / 2;
     menuBtn.position.set(-0.35, -0.95, 0.55);
-    controller.add(menuBtn);
+    controlElementsGroup.add(menuBtn);
     
     const homeBtn = menuBtn.clone();
     homeBtn.position.set(0.35, -0.95, 0.55);
-    controller.add(homeBtn);
+    controlElementsGroup.add(homeBtn);
 
     // Add all groups to controller
     controller.add(phoneGroup);
     controller.add(leftGrip);
     controller.add(rightGrip);
     controller.add(triggerGroup);
+    controller.add(controlElementsGroup); // Add the new group
 
     controller.position.y = 0;
 
-    return { controller, phoneGroup, leftGrip, rightGrip, triggerGroup };
+    return { controller, phoneGroup, leftGrip, rightGrip, triggerGroup, controlElementsGroup };
 }

@@ -4,12 +4,14 @@ import IndexPage from './pages/Index';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<IndexPage />} />
-        {/* Add other routes here if needed */}
-      </Routes>
-    </Router>
+    <div className="dark min-h-screen">
+      <Router>
+        <Routes>
+          <Route path="/" element={<IndexPage />} />
+          {/* Add other routes here if needed */}
+        </Routes>
+      </Router>
+    </div>
   );
 }
 
