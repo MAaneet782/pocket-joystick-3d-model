@@ -2,9 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import ThreeDViewer from '@/components/ThreeDViewer';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Rotate3D, Split, Smartphone, RefreshCw, Play, Pause, Target } from 'lucide-react';
 
 type ViewType = 'default' | 'front' | 'back' | 'top' | 'side';
 
@@ -42,115 +39,29 @@ const Index = () => {
         setIsRotating(false);
     };
 
-    const ControlButton = ({ viewKey, label, onClick, isActive, Icon }: { viewKey: string, label: string, onClick: () => void, isActive: boolean, Icon: React.ElementType }) => (
-        <Button
+    const Button = ({ viewKey, label, onClick, isActive, icon }: { viewKey: string, label: string, onClick: () => void, isActive: boolean, icon: string }) => (
+        <button
             onClick={onClick}
-            variant={isActive ? "default" : "secondary"}
             className={cn(
-                "w-full justify-start transition-all duration-300",
-                isActive && "bg-gradient-to-r from-[#00C9FF] to-[#0080FF] text-white hover:bg-gradient-to-r hover:from-[#0080FF] hover:to-[#00C9FF]",
-                !isActive && "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                "flex items-center justify-center gap-2 border-none px-4 py-3 rounded-xl font-semibold cursor-pointer transition-all duration-300 text-sm md:text-base whitespace-nowrap",
+                "bg-gray-700 text-white shadow-lg",
+                "hover:bg-gray-600 hover:translate-y-[-2px] hover:shadow-xl",
+                isActive && "bg-gradient-to-br from-[#00C9FF] to-[#0080FF] text-white shadow-[0_5px_20px_rgba(0,200,255,0.5)]",
+                isActive && "hover:from-[#0080FF] hover:to-[#00C9FF] hover:translate-y-0"
             )}
             id={`btn-${viewKey}`}
         >
-            <Icon className="mr-2 h-4 w-4" />
-            {label}
-        </Button>
+            <span className="text-lg">{icon}</span> <span>{label}</span>
+        </button>
     );
 
-    const SpecCard = ({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) => (
-        <Card className="bg-gray-800 border-gray-700 text-gray-100 shadow-xl transition-transform hover:scale-[1.02] duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-[#00C9FF]">{title}</CardTitle>
-                <Icon className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{value}</div>
-            </CardContent>
-        </Card>
-    );
-
-    const ViewControls = () => (
-        <Card className="bg-gray-800 border-gray-700 shadow-xl h-full">
-            <CardHeader>
-                <CardTitle className="text-xl text-white">Camera Views</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-                <ControlButton 
-                    viewKey="default" 
-                    label="Default View" 
-                    onClick={() => setView('default')} 
-                    isActive={currentView === 'default'} 
-                    Icon={Target} 
-                />
-                <ControlButton 
-                    viewKey="front" 
-                    label="Front View" 
-                    onClick={() => setView('front')} 
-                    isActive={currentView === 'front'} 
-                    Icon={Smartphone} 
-                />
-                <ControlButton 
-                    viewKey="back" 
-                    label="Back View" 
-                    onClick={() => setView('back')} 
-                    isActive={currentView === 'back'} 
-                    Icon={Smartphone} 
-                />
-                <ControlButton 
-                    viewKey="top" 
-                    label="Top View" 
-                    onClick={() => setView('top')} 
-                    isActive={currentView === 'top'} 
-                    Icon={Rotate3D} 
-                />
-                <ControlButton 
-                    viewKey="side" 
-                    label="Side View" 
-                    onClick={() => setView('side')} 
-                    isActive={currentView === 'side'} 
-                    Icon={Rotate3D} 
-                />
-            </CardContent>
-        </Card>
-    );
-
-    const ModelControls = () => (
-        <Card className="bg-gray-800 border-gray-700 shadow-xl h-full">
-            <CardHeader>
-                <CardTitle className="text-xl text-white">Model Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-                <ControlButton 
-                    viewKey="explode" 
-                    label={isExploded ? 'Assemble Model' : 'Explode View'} 
-                    onClick={toggleExploded} 
-                    isActive={isExploded} 
-                    Icon={Split} 
-                />
-                <ControlButton 
-                    viewKey="phone" 
-                    label={showPhone ? 'Hide Phone' : 'Show Phone'} 
-                    onClick={togglePhone} 
-                    isActive={!showPhone} 
-                    Icon={Smartphone} 
-                />
-                <ControlButton 
-                    viewKey="rotate" 
-                    label={isRotating ? 'Stop Rotation' : 'Auto Rotate'} 
-                    onClick={toggleRotation} 
-                    isActive={isRotating} 
-                    Icon={isRotating ? Pause : Play} 
-                />
-                <ControlButton 
-                    viewKey="reset" 
-                    label="Reset All" 
-                    onClick={resetView} 
-                    isActive={false} 
-                    Icon={RefreshCw} 
-                />
-            </CardContent>
-        </Card>
+    const SpecCard = ({ title, children }: { title: string, children: React.ReactNode }) => (
+        <div className="bg-gray-800/80 backdrop-blur-sm p-6 md:p-8 rounded-[20px] border border-gray-700 shadow-2xl transition-transform hover:scale-[1.02] duration-300">
+            <h3 className="text-xl md:text-2xl font-bold mb-4 text-[#00C9FF] border-b border-[#00C9FF]/30 pb-2">{title}</h3>
+            <div className="space-y-2 text-sm md:text-base">
+                {children}
+            </div>
+        </div>
     );
 
     return (
@@ -166,41 +77,119 @@ const Index = () => {
                     }}>
                         PocketJoystick Pro Grip
                     </h1>
-                    <p className="text-xl md:text-3xl text-[#00C9FF] mb-4 font-bold">Interactive 3D Model Dashboard</p>
+                    <p className="text-xl md:text-3xl text-[#00C9FF] mb-4 font-bold">3D Console Controller Model</p>
                     <p className="text-md text-gray-400 max-w-3xl mx-auto">Explore the modular design and ergonomic features of the next-generation mobile gaming controller.</p>
                 </div>
 
-                {/* KPI Cards (Top Row) */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    <SpecCard title="Latency" value="< 10ms" icon={RefreshCw} />
-                    <SpecCard title="Battery Life" value="100+ hours" icon={Play} />
-                    <SpecCard title="Connection" value="Bluetooth 5.0" icon={Smartphone} />
-                    <SpecCard title="Weight" value="180g" icon={Target} />
+                {/* Controls */}
+                <div className="flex flex-wrap justify-center gap-3 md:gap-4 p-4 md:p-6 bg-gray-800 rounded-[20px] border border-gray-700 mb-10 shadow-xl">
+                    <Button 
+                        viewKey="default" 
+                        label="Default View" 
+                        onClick={() => setView('default')} 
+                        isActive={currentView === 'default'} 
+                        icon="🎯" 
+                    />
+                    <Button 
+                        viewKey="front" 
+                        label="Front View" 
+                        onClick={() => setView('front')} 
+                        isActive={currentView === 'front'} 
+                        icon="📱" 
+                    />
+                    <Button 
+                        viewKey="back" 
+                        label="Back View" 
+                        onClick={() => setView('back')} 
+                        isActive={currentView === 'back'} 
+                        icon="🔙" 
+                    />
+                    <Button 
+                        viewKey="top" 
+                        label="Top View" 
+                        onClick={() => setView('top')} 
+                        isActive={currentView === 'top'} 
+                        icon="⬆️" 
+                    />
+                    <Button 
+                        viewKey="side" 
+                        label="Side View" 
+                        onClick={() => setView('side')} 
+                        isActive={currentView === 'side'} 
+                        icon="↔️" 
+                    />
+                    <Button 
+                        viewKey="explode" 
+                        label={isExploded ? 'Assemble' : 'Explode View'} 
+                        onClick={toggleExploded} 
+                        isActive={isExploded} 
+                        icon={isExploded ? '🔧' : '💥'} 
+                    />
+                    <Button 
+                        viewKey="phone" 
+                        label={showPhone ? 'Hide Phone' : 'Show Phone'} 
+                        onClick={togglePhone} 
+                        isActive={!showPhone} 
+                        icon="📱" 
+                    />
+                    <Button 
+                        viewKey="rotate" 
+                        label={isRotating ? 'Stop Rotation' : 'Auto Rotate'} 
+                        onClick={toggleRotation} 
+                        isActive={isRotating} 
+                        icon={isRotating ? '⏸️' : '🔄'} 
+                    />
+                    <Button 
+                        viewKey="reset" 
+                        label="Reset All" 
+                        onClick={resetView} 
+                        isActive={false} 
+                        icon="🔁" 
+                    />
                 </div>
 
-                {/* Main Content: 3D Viewer (Full Width) */}
-                <div className="mb-6">
-                    <div className="relative bg-gray-800 rounded-[30px] p-4 md:p-8 lg:p-12 border border-gray-700 shadow-2xl min-h-[800px] flex items-center justify-center">
-                        {isLoading && (
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl text-[#00C9FF] font-bold z-10 flex flex-col items-center">
-                                <div className="text-5xl mb-2 animate-spin-slow">🎮</div>
-                                Loading 3D Model...
-                            </div>
-                        )}
-                        <ThreeDViewer 
-                            view={currentView}
-                            isExploded={isExploded}
-                            showPhone={showPhone}
-                            isRotating={isRotating}
-                            onLoadingComplete={handleLoadingComplete}
-                        />
-                    </div>
+                {/* 3D Canvas Container */}
+                <div className="relative bg-gray-800 rounded-[30px] p-4 md:p-8 lg:p-12 border border-gray-700 mb-10 shadow-2xl min-h-[850px] flex items-center justify-center">
+                    {isLoading && (
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl text-[#00C9FF] font-bold z-10 flex flex-col items-center">
+                            <div className="text-5xl mb-2 animate-spin-slow">🎮</div>
+                            Loading 3D Model...
+                        </div>
+                    )}
+                    <ThreeDViewer 
+                        view={currentView}
+                        isExploded={isExploded}
+                        showPhone={showPhone}
+                        isRotating={isRotating}
+                        onLoadingComplete={handleLoadingComplete}
+                    />
                 </div>
-                
-                {/* Controls (Below Viewer, side-by-side on large screens) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <ViewControls />
-                    <ModelControls />
+
+                {/* Specifications */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <SpecCard title="📱 Phone Layout">
+                        <p className="text-gray-300 leading-relaxed"><strong>Orientation:</strong> Horizontal/Landscape</p>
+                        <p className="text-gray-300 leading-relaxed"><strong>Size:</strong> 5.5" - 6.9" screens</p>
+                        <p className="text-gray-300 leading-relaxed"><strong>Position:</strong> Center (like Nintendo Switch)</p>
+                    </SpecCard>
+
+                    <SpecCard title="🕹️ Controls">
+                        <p className="text-gray-300 leading-relaxed"><strong>Left:</strong> Analog stick + D-Pad</p>
+                        <p className="text-gray-300 leading-relaxed"><strong>Right:</strong> ABXY buttons (color-coded)</p>
+                        <p className="text-gray-300 leading-relaxed"><strong>Top:</strong> L1/L2 + R1/R2 triggers</p>
+                    </SpecCard>
+
+                    <SpecCard title="🎮 Design">
+                        <p className="text-gray-300 leading-relaxed"><strong>Style:</strong> Xbox/PlayStation layout</p>
+                        <p className="text-gray-300 leading-relaxed"><strong>Grips:</strong> Curved ergonomic handles</p>
+                        <p className="text-gray-300 leading-relaxed"><strong>Weight:</strong> 180g (balanced)</p>
+                    </SpecCard>
+
+                    <SpecCard title="⚡ Performance">
+                        <p className="text-gray-300 leading-relaxed"><strong>Latency:</strong> &lt; 10ms</p>
+                        <p className="text-gray-300 leading-relaxed"><strong>Battery:</strong> 100+ hours</p>
+                        <p className="text-gray-300 leading-relaxed"><strong>Connection:</strong> Bluetooth 5.0</p>
+                    </SpecCard>
                 </div>
             </div>
             <MadeWithDyad />
