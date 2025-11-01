@@ -75,7 +75,7 @@ const ThreeDViewer: React.FC = () => {
         // 1. Scene, Camera, Renderer, Controls, Lighting, Ground Plane (omitted for brevity, assumed functional)
         
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a1a); // Darker background for dark theme
+        scene.background = new THREE.Color(0x1a1a1a); // Dark background
         sceneRef.current = scene;
 
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
@@ -97,10 +97,18 @@ const ThreeDViewer: React.FC = () => {
         controls.maxDistance = 15;
         controlsRef.current = controls;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        // --- Enhanced Lighting for Realism ---
+        
+        // Ambient Light (General fill)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); 
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        // Hemisphere Light (Simulates environmental bounce/sky)
+        const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, 0.5);
+        scene.add(hemisphereLight);
+
+        // Directional Light (Main key light, increased intensity for PBR materials)
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0); 
         directionalLight.position.set(5, 10, 7.5);
         directionalLight.castShadow = true;
         directionalLight.shadow.mapSize.width = 1024;
