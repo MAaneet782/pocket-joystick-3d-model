@@ -54,6 +54,7 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
 
         // Renderer
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(canvas.clientWidth / 2, canvas.clientHeight / 2); // Start smaller for performance
         renderer.setSize(canvas.clientWidth, canvas.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
@@ -61,34 +62,44 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
         rendererRef.current = renderer;
 
         // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        // Increased ambient light slightly to compensate for darker materials
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); 
         scene.add(ambientLight);
 
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        // Main directional light (stronger)
+        const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
         mainLight.position.set(10, 15, 10);
         mainLight.castShadow = true;
         mainLight.shadow.mapSize.width = 2048;
         mainLight.shadow.mapSize.height = 2048;
+        mainLight.shadow.camera.near = 0.5;
+        mainLight.shadow.camera.far = 50;
+        mainLight.shadow.camera.left = -10;
+        mainLight.shadow.camera.right = 10;
+        mainLight.shadow.camera.top = 10;
+        mainLight.shadow.camera.bottom = -10;
         scene.add(mainLight);
 
-        const fillLight = new THREE.DirectionalLight(0xa0c4ff, 0.6);
+        // Fill light (so shadows aren't pure black)
+        const fillLight = new THREE.DirectionalLight(0xa0c4ff, 1.0);
         fillLight.position.set(-10, 8, -10);
         scene.add(fillLight);
 
-        const rimLight = new THREE.PointLight(0x00C9FF, 0.8, 20);
+        // Rim light for highlights on edges
+        const rimLight = new THREE.PointLight(0x00C9FF, 1.5, 20);
         rimLight.position.set(0, 10, -10);
         scene.add(rimLight);
 
         // Ground
         const groundGeo = new THREE.CircleGeometry(20, 64);
-        const groundMat = new THREE.ShadowMaterial({ opacity: 0.3 });
+        const groundMat = new THREE.ShadowMaterial({ opacity: 0.4 }); // Slightly darker shadow
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = -3;
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // Grid
+        // Grid (kept for aesthetic background)
         const gridHelper = new THREE.GridHelper(20, 20, 0x00C9FF, 0x4a5568);
         gridHelper.position.y = -2.95;
         (gridHelper.material as THREE.Material).opacity = 0.3;
@@ -149,8 +160,14 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
             if (isDragging) {
                 const deltaX = e.clientX - previousMousePosition.x;
                 const deltaY = e.clientY - previousMousePosition.y;
-                controller.rotation.y += deltaX * 0.01;
-                controller.rotation.x += deltaY * 0.01;
+                
+                // Rotation sensitivity adjustment
+                controller.rotation.y += deltaX * 0.005; 
+                controller.rotation.x += deltaY * 0.005;
+                
+                // Clamp X rotation to prevent flipping
+                controller.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, controller.rotation.x));
+
                 previousMousePosition = { x: e.clientX, y: e.clientY };
             }
         };
@@ -161,7 +178,8 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
 
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
-            camera.position.z += e.deltaY * 0.01;
+            // Zoom sensitivity adjustment
+            camera.position.z += e.deltaY * 0.005; 
             camera.position.z = Math.max(6, Math.min(20, camera.position.z));
         };
 
@@ -194,11 +212,12 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
     useEffect(() => {
         const groups = controllerGroupsRef.current;
         if (groups) {
-            const offset = isExploded ? 2.5 : 0;
+            // Use a slightly smaller offset for a cleaner exploded view
+            const offset = isExploded ? 1.8 : 0; 
             
             groups.phoneGroup.position.z = offset;
-            groups.leftGrip.position.x = -2.2 - offset; // Adjusted initial position from model creation
-            groups.rightGrip.position.x = 2.2 + offset; // Adjusted initial position from model creation
+            groups.leftGrip.position.x = -2.2 - offset; 
+            groups.rightGrip.position.x = 2.2 + offset; 
             groups.triggerGroup.position.y = offset;
         }
     }, [isExploded]);
@@ -235,8 +254,8 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
             ref={canvasRef} 
             id="canvas3d" 
             className={cn(
-                "w-full h-[800px] block rounded-[20px]",
-                "bg-[radial-gradient(circle_at_center,_#5a6c7d_0%,_#4a5568_100%)]"
+                "w-full h-[800px] block rounded-[20px] cursor-grab active:cursor-grabbing",
+                "bg-[radial-gradient(circle_at_center,_#4a5568_0%,_#2d3748_100%)]" // Darker background gradient
             )}
         />
     );

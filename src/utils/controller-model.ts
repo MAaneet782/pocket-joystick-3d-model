@@ -1,50 +1,61 @@
 import * as THREE from 'three';
 
-// Materials
+// --- Enhanced Materials for Realism ---
+
+// Main Body/Grip Material (Matte Plastic)
 const gripMat = new THREE.MeshStandardMaterial({ 
-    color: 0xe8e8e8, 
-    roughness: 0.5,
-    metalness: 0.1
+    color: 0x2a2a2a, // Darker grey/black for main body
+    roughness: 0.6,
+    metalness: 0.1,
+    side: THREE.DoubleSide
 });
+
+// Phone Body Material (Glossy Black)
 const phoneMat = new THREE.MeshStandardMaterial({ 
-    color: 0x1a1a1a, 
+    color: 0x0a0a0a, 
     metalness: 0.9, 
-    roughness: 0.15 
+    roughness: 0.05 // Very glossy
 });
+
+// Screen Material (Emissive Blue/Cyan)
 const screenMat = new THREE.MeshStandardMaterial({ 
-    color: 0x0066FF, 
-    emissive: 0x0066FF, 
-    emissiveIntensity: 0.5,
-    metalness: 0.3,
+    color: 0x00C9FF, 
+    emissive: 0x00C9FF, 
+    emissiveIntensity: 0.3,
+    metalness: 0.1,
     roughness: 0.1
 });
+
+// Bezel Material (Slightly lighter plastic)
 const bezelMat = new THREE.MeshStandardMaterial({ 
-    color: 0xf0f0f0, 
-    metalness: 0.2, 
-    roughness: 0.4 
+    color: 0x1a1a1a, 
+    metalness: 0.1, 
+    roughness: 0.5 
 });
-const dotMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
-const analogBaseMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.3 });
+
+// Button/Stick Materials
+const dotMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.5 });
+const analogBaseMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.5, roughness: 0.3 });
 const analogStickMat = new THREE.MeshStandardMaterial({ 
-    color: 0x1a1a1a,
+    color: 0x0a0a0a,
     metalness: 0.4,
-    roughness: 0.3
+    roughness: 0.2
 });
-const dpadMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.2 });
-const crossMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
+const dpadMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.2, roughness: 0.4 });
+const crossMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a });
 const triggerMat = new THREE.MeshStandardMaterial({ 
-    color: 0xd0d0d0,
+    color: 0x4a4a4a,
     metalness: 0.3,
     roughness: 0.4
 });
 const lightMat = new THREE.MeshBasicMaterial({ 
     color: 0x00ff88,
     transparent: true,
-    opacity: 0.8
+    opacity: 0.9
 });
-const centerBtnMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+const centerBtnMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
 
-// Geometries
+// --- Geometries ---
 const phoneGeo = new THREE.BoxGeometry(3.5, 1.8, 0.15);
 const screenGeo = new THREE.BoxGeometry(3.3, 1.6, 0.02);
 const bezelGeo = new THREE.BoxGeometry(3.5, 0.15, 0.05);
@@ -60,7 +71,7 @@ const labelGeo = new THREE.CircleGeometry(0.14, 32);
 const triggerGeo = new THREE.BoxGeometry(0.9, 0.3, 0.25);
 const l2Geo = new THREE.BoxGeometry(0.9, 0.35, 0.3);
 const centerBtnGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 32);
-const lightGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.05, 16); // Added definition for lightGeo
+const lightGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.05, 16);
 
 const buttonsConfig = [
     { x: 1.6, y: 0.35, color: 0x39FF14, label: 'A' },  // Bottom - Green
@@ -79,7 +90,8 @@ const createGripShape = () => {
     leftGripShape.lineTo(0.2, 1);
     leftGripShape.lineTo(0, 1);
     
-    const extrudeSettings = { depth: 0.9, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05 };
+    // Increased bevel for smoother edges
+    const extrudeSettings = { depth: 0.9, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1 };
     return new THREE.ExtrudeGeometry(leftGripShape, extrudeSettings);
 };
 
