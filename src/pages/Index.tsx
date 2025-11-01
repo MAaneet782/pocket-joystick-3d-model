@@ -71,7 +71,7 @@ const Index = () => {
     );
 
     const ViewControls = () => (
-        <Card className="bg-gray-800 border-gray-700 shadow-xl">
+        <Card className="bg-gray-800 border-gray-700 shadow-xl h-full">
             <CardHeader>
                 <CardTitle className="text-xl text-white">Camera Views</CardTitle>
             </CardHeader>
@@ -116,7 +116,7 @@ const Index = () => {
     );
 
     const ModelControls = () => (
-        <Card className="bg-gray-800 border-gray-700 shadow-xl">
+        <Card className="bg-gray-800 border-gray-700 shadow-xl h-full">
             <CardHeader>
                 <CardTitle className="text-xl text-white">Model Actions</CardTitle>
             </CardHeader>
@@ -178,17 +178,9 @@ const Index = () => {
                     <SpecCard title="Weight" value="180g" icon={Target} />
                 </div>
 
-                {/* Main Content: 3D Viewer and Controls */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    
-                    {/* Left Sidebar / Controls (1 column on large screens) */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <ViewControls />
-                        <ModelControls />
-                    </div>
-
-                    {/* 3D Viewer (3 columns on large screens) */}
-                    <div className="lg:col-span-3 relative bg-gray-800 rounded-[30px] p-4 md:p-8 lg:p-12 border border-gray-700 shadow-2xl min-h-[800px] flex items-center justify-center">
+                {/* Main Content: 3D Viewer (Full Width) */}
+                <div className="mb-6">
+                    <div className="relative bg-gray-800 rounded-[30px] p-4 md:p-8 lg:p-12 border border-gray-700 shadow-2xl min-h-[800px] flex items-center justify-center">
                         {isLoading && (
                             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl text-[#00C9FF] font-bold z-10 flex flex-col items-center">
                                 <div className="text-5xl mb-2 animate-spin-slow">🎮</div>
@@ -203,6 +195,12 @@ const Index = () => {
                             onLoadingComplete={handleLoadingComplete}
                         />
                     </div>
+                </div>
+                
+                {/* Controls (Below Viewer, side-by-side on large screens) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <ViewControls />
+                    <ModelControls />
                 </div>
             </div>
             <MadeWithDyad />
