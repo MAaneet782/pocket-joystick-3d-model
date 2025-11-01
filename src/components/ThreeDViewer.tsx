@@ -1,28 +1,66 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import * as ControlsModule from 'three/examples/jsm/controls/OrbitControls';
 import { cn } from '@/lib/utils';
 import { createControllerModel, ControllerGroups } from '@/utils/controller-model';
+import ModelControls from './ModelControls';
+
+// Extract OrbitControls class from the imported module to resolve TS error
+const OrbitControls = ControlsModule.OrbitControls;
+
+// Explosion offsets and speed for smooth transition
+const EXPLOSION_OFFSET_X = 2.5;
+const EXPLOSION_OFFSET_Y = 1.5;
+const EXPLOSION_OFFSET_Z = 1.0;
+const LERP_SPEED = 0.05; 
+
+// Initial positions defined in controller-model.ts
+const INITIAL_LEFT_GRIP_POS = new THREE.Vector3(-2.2, -0.2, 0);
+const INITIAL_RIGHT_GRIP_POS = new THREE.Vector3(2.2, -0.2, 0);
+
+const targetPositions = {
+    phone: new THREE.Vector3(0, 0, 0),
+    leftGrip: INITIAL_LEFT_GRIP_POS.clone(),
+    rightGrip: INITIAL_RIGHT_GRIP_POS.clone(),
+    triggerGroup: new THREE.Vector3(0, 0, 0),
+};
 
 const ThreeDViewer: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const sceneRef = useRef<THREE.Scene | null>(null);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-    const controlsRef = useRef<OrbitControls | null>(null);
+    const controlsRef = useRef<ControlsModule.OrbitControls | null>(null);
     const modelRef = useRef<ControllerGroups | null>(null);
+    
+    const [isExploded, setIsExploded] = React.useState(false);
+
+    const updateTargetPositions = useCallback((exploded: boolean) => {
+        if (!modelRef.current) return;
+
+        if (exploded) {
+            targetPositions.phone.set(0, 0, EXPLOSION_OFFSET_Z);
+            targetPositions.leftGrip.set(INITIAL_LEFT_GRIP_POS.x - EXPLOSION_OFFSET_X, INITIAL_LEFT_GRIP_POS.y, INITIAL_LEFT_GRIP_POS.z);
+            targetPositions.rightGrip.set(INITIAL_RIGHT_GRIP_POS.x + EXPLOSION_OFFSET_X, INITIAL_RIGHT_GRIP_POS.y, INITIAL_RIGHT_GRIP_POS.z);
+            targetPositions.triggerGroup.set(0, EXPLOSION_OFFSET_Y, 0);
+        } else {
+            targetPositions.phone.set(0, 0, 0);
+            targetPositions.leftGrip.copy(INITIAL_LEFT_GRIP_POS);
+            targetPositions.rightGrip.copy(INITIAL_RIGHT_GRIP_POS);
+            targetPositions.triggerGroup.set(0, 0, 0);
+        }
+    }, []);
 
     const setupScene = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        // Get dimensions from the canvas element defined by CSS
         const width = canvas.clientWidth;
         const height = canvas.clientHeight;
 
         // 1. Scene
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f0f0); // Light background
+        scene.background = new THREE.Color(0xf0f0f0); 
         sceneRef.current = scene;
 
         // 2. Camera
@@ -77,11 +115,24 @@ const ThreeDViewer: React.FC = () => {
         const controllerModel = createControllerModel();
         scene.add(controllerModel.controller);
         modelRef.current = controllerModel;
+        
+        // Ensure initial target positions are set based on the model's initial state
+        updateTargetPositions(isExploded);
+
 
         // 8. Animation Loop
         const animate = () => {
             requestAnimationFrame(animate);
             controls.update();
+            
+            // Lerp model groups towards target positions for smooth transitions
+            if (modelRef.current) {
+                modelRef.current.phoneGroup.position.lerp(targetPositions.phone, LERP_SPEED);
+                modelRef.current.leftGrip.position.lerp(targetPositions.leftGrip, LERP_SPEED);
+                modelRef.current.rightGrip.position.lerp(targetPositions.rightGrip, LERP_SPEED);
+                modelRef.current.triggerGroup.position.lerp(targetPositions.triggerGroup, LERP_SPEED);
+            }
+
             renderer.render(scene, camera);
         };
         animate();
@@ -102,22 +153,46 @@ const ThreeDViewer: React.FC = () => {
             renderer.dispose();
             controls.dispose();
         };
-    }, []);
+    }, [isExploded, updateTargetPositions]);
 
     useEffect(() => {
         const cleanup = setupScene();
         return cleanup;
     }, [setupScene]);
 
+    const handleToggleExplosion = useCallback(() => {
+        setIsExploded(prev => {
+            const newState = !prev;
+            updateTargetPositions(newState);
+            return newState;
+        });
+    }, [updateTargetPositions]);
+
+    const handleResetCamera = useCallback(() => {
+        if (controlsRef.current && cameraRef.current) {
+            controlsRef.current.reset();
+            // Ensure camera is reset to initial position (0, 0, 6)
+            cameraRef.current.position.set(0, 0, 6);
+            cameraRef.current.lookAt(0, 0, 0);
+        }
+    }, []);
+
     return (
-        <div className="flex justify-center w-full p-4">
+        <div className="flex flex-col lg:flex-row gap-6 w-full p-4">
             <canvas
                 ref={canvasRef} 
                 id="canvas3d" 
                 className={cn(
-                    "w-full h-[80vh] max-w-4xl border rounded-lg shadow-lg bg-gray-50"
+                    "w-full h-[80vh] max-w-4xl border rounded-lg shadow-lg bg-gray-50 flex-grow"
                 )}
             />
+            <div className="lg:w-1/4 w-full">
+                <ModelControls 
+                    isExploded={isExploded}
+                    onToggleExplosion={handleToggleExplosion}
+                    onResetCamera={handleResetCamera}
+                />
+            </div>
         </div>
     );
 };
