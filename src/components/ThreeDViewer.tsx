@@ -254,7 +254,7 @@ const ThreeDViewer: React.FC<ThreeDViewerProps> = ({
             ref={canvasRef} 
             id="canvas3d" 
             className={cn(
-                "w-full h-[800px] block rounded-[20px] cursor-grab active:cursor-grabbing",
+                "w-full h-full block rounded-[20px] cursor-grab active:cursor-grabbing",
                 "bg-[radial-gradient(circle_at_center,_#4a5568_0%,_#2d3748_100%)]" // Darker background gradient
             )}
         />
