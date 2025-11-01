@@ -291,7 +291,8 @@ export function createControllerModel(): ControllerGroups {
     controller.add(triggerGroup);
     controller.add(controlElementsGroup); // Add the new group
 
-    controller.position.y = 0;
+    // Raise the entire model slightly so it sits above the ground plane (y=-1.5)
+    controller.position.y = 0.5;
 
     return { controller, phoneGroup, leftGrip, rightGrip, triggerGroup, controlElementsGroup };
 }

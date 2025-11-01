@@ -76,7 +76,8 @@ const ThreeDViewer: React.FC = () => {
         sceneRef.current = scene;
 
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-        camera.position.set(0, 0, 6);
+        // Adjusted camera position: slightly higher (Y=1) and further back (Z=7)
+        camera.position.set(0, 1, 7); 
         cameraRef.current = camera;
 
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -92,6 +93,8 @@ const ThreeDViewer: React.FC = () => {
         controls.screenSpacePanning = false;
         controls.minDistance = 3;
         controls.maxDistance = 15;
+        // Set target slightly higher to center the raised model
+        controls.target.set(0, 0.5, 0); 
         controlsRef.current = controls;
 
         // --- Enhanced Lighting for Realism ---
@@ -283,8 +286,8 @@ const ThreeDViewer: React.FC = () => {
     const handleResetCamera = useCallback(() => {
         if (controlsRef.current && cameraRef.current) {
             controlsRef.current.reset();
-            cameraRef.current.position.set(0, 0, 6);
-            cameraRef.current.lookAt(0, 0, 0);
+            cameraRef.current.position.set(0, 1, 7); // Reset to new default position
+            controlsRef.current.target.set(0, 0.5, 0); // Reset target
         }
     }, []);
     
