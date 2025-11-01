@@ -1,12 +1,9 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import * as ControlsModule from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { cn } from '@/lib/utils';
 import { createControllerModel, ControllerGroups } from '@/utils/controller-model';
 import ModelControls from './ModelControls';
-
-// Extract OrbitControls class from the imported module to resolve TS error
-const OrbitControls = ControlsModule.OrbitControls;
 
 // Explosion offsets and speed for smooth transition
 const EXPLOSION_OFFSET_X = 2.5;
@@ -41,7 +38,7 @@ const ThreeDViewer: React.FC = () => {
     const sceneRef = useRef<THREE.Scene | null>(null);
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-    const controlsRef = useRef<ControlsModule.OrbitControls | null>(null);
+    const controlsRef = useRef<OrbitControls | null>(null);
     const modelRef = useRef<ControllerGroups | null>(null);
     
     const [isExploded, setIsExploded] = React.useState(false);
@@ -120,6 +117,12 @@ const ThreeDViewer: React.FC = () => {
         directionalLight.shadow.camera.top = 10;
         directionalLight.shadow.camera.bottom = -10;
         scene.add(directionalLight);
+        
+        // Subtle Point Light for Specular Highlights
+        const pointLight = new THREE.PointLight(0xffffff, 10, 10);
+        pointLight.position.set(-3, 3, 3);
+        scene.add(pointLight);
+
 
         const planeGeo = new THREE.PlaneGeometry(20, 20);
         const planeMat = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide }); // Darker plane

@@ -4,24 +4,24 @@ import * as THREE from 'three';
 
 // Main Body/Grip Material (Matte Plastic)
 const gripMat = new THREE.MeshStandardMaterial({ 
-    color: 0x2a2a2a, // Darker grey/black for main body
-    roughness: 0.6,
-    metalness: 0.1,
+    color: 0x1f1f1f, // Slightly darker grey/black for main body
+    roughness: 0.7, // Slightly rougher matte finish
+    metalness: 0.05, // Less metallic
     side: THREE.DoubleSide
 });
 
 // Phone Body Material (Glossy Black)
 const phoneMat = new THREE.MeshStandardMaterial({ 
-    color: 0x0a0a0a, 
-    metalness: 0.9, 
-    roughness: 0.05 // Very glossy
+    color: 0x121212, // Deep black, but not pure 0x000000
+    metalness: 0.95, // Very high metalness for glass/screen look
+    roughness: 0.02 // Extremely glossy
 });
 
 // Screen Material (Emissive Blue/Cyan)
 const screenMat = new THREE.MeshStandardMaterial({ 
     color: 0x00C9FF, 
     emissive: 0x00C9FF, 
-    emissiveIntensity: 0.3,
+    emissiveIntensity: 0.4, // Slightly brighter screen
     metalness: 0.1,
     roughness: 0.1
 });
