@@ -5,6 +5,7 @@ declare module 'three/examples/jsm/controls/OrbitControls.js' {
         constructor(object: THREE.Camera, domElement?: HTMLElement);
         
         // Properties used in ThreeDViewer.tsx
+        object: THREE.Camera;
         enableDamping: boolean;
         dampingFactor: number;
         screenSpacePanning: boolean;

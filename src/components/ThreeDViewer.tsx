@@ -35,11 +35,8 @@ const highlightMat = new THREE.MeshStandardMaterial({
 
 const ThreeDViewer: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const sceneRef = useRef<THREE.Scene | null>(null);
-    const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-    const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-    const controlsRef = useRef<OrbitControls | null>(null);
     const modelRef = useRef<ControllerGroups | null>(null);
+    const controlsRef = useRef<OrbitControls | null>(null);
     
     const [isExploded, setIsExploded] = React.useState(false);
     const [isPhoneVisible, setIsPhoneVisible] = React.useState(true);
@@ -47,8 +44,6 @@ const ThreeDViewer: React.FC = () => {
 
 
     const updateTargetPositions = useCallback((exploded: boolean) => {
-        if (!modelRef.current) return;
-
         if (exploded) {
             targetPositions.phone.set(0, 0, EXPLOSION_OFFSET_Z);
             targetPositions.leftGrip.set(INITIAL_LEFT_GRIP_POS.x - EXPLOSION_OFFSET_X, INITIAL_LEFT_GRIP_POS.y, INITIAL_LEFT_GRIP_POS.z);
@@ -62,7 +57,7 @@ const ThreeDViewer: React.FC = () => {
         }
     }, []);
 
-    const setupScene = useCallback(() => {
+    useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -71,18 +66,15 @@ const ThreeDViewer: React.FC = () => {
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x1a1a1a);
-        sceneRef.current = scene;
 
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
         camera.position.set(0, 1, 7); 
-        cameraRef.current = camera;
 
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        rendererRef.current = renderer;
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -95,27 +87,13 @@ const ThreeDViewer: React.FC = () => {
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); 
         scene.add(ambientLight);
-
         const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, 0.5);
         scene.add(hemisphereLight);
-
         const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0); 
         directionalLight.position.set(5, 10, 7.5);
         directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 1024;
-        directionalLight.shadow.mapSize.height = 1024;
-        directionalLight.shadow.camera.near = 0.5;
-        directionalLight.shadow.camera.far = 50;
-        directionalLight.shadow.camera.left = -10;
-        directionalLight.shadow.camera.right = 10;
-        directionalLight.shadow.camera.top = 10;
-        directionalLight.shadow.camera.bottom = -10;
         scene.add(directionalLight);
         
-        const pointLight = new THREE.PointLight(0xffffff, 10, 10);
-        pointLight.position.set(-3, 3, 3);
-        scene.add(pointLight);
-
         const planeGeo = new THREE.PlaneGeometry(20, 20);
         const planeMat = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide });
         const plane = new THREE.Mesh(planeGeo, planeMat);
@@ -140,7 +118,6 @@ const ThreeDViewer: React.FC = () => {
             controllerModel.leftGrip,
             controllerModel.rightGrip,
             controllerModel.triggerGroup,
-            controllerModel.controlElementsGroup, // Include new group for interaction
         ];
 
         groupsToInteract.forEach(group => {
@@ -179,25 +156,14 @@ const ThreeDViewer: React.FC = () => {
             pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         };
-
         canvas.addEventListener('pointermove', onPointerMove);
 
-        const clock = new THREE.Clock();
-
+        let animationFrameId: number;
         const animate = () => {
-            requestAnimationFrame(animate);
+            animationFrameId = requestAnimationFrame(animate);
             controls.update();
             
             if (modelRef.current) {
-                // Stylish float animation for exploded parts
-                if (isExploded) {
-                    const elapsedTime = clock.getElapsedTime();
-                    const floatOffset = Math.sin(elapsedTime * 2) * 0.05;
-                    targetPositions.leftGrip.y = INITIAL_LEFT_GRIP_POS.y + floatOffset;
-                    targetPositions.rightGrip.y = INITIAL_RIGHT_GRIP_POS.y - floatOffset;
-                    targetPositions.triggerGroup.y = EXPLOSION_OFFSET_Y + floatOffset;
-                }
-
                 modelRef.current.phoneGroup.position.lerp(targetPositions.phone, LERP_SPEED);
                 modelRef.current.leftGrip.position.lerp(targetPositions.leftGrip, LERP_SPEED);
                 modelRef.current.rightGrip.position.lerp(targetPositions.rightGrip, LERP_SPEED);
@@ -208,14 +174,14 @@ const ThreeDViewer: React.FC = () => {
             }
 
             raycaster.setFromCamera(pointer, camera);
-            const intersects = raycaster.intersectObjects(controllerModel.controller.children, true);
+            const intersects = raycaster.intersectObjects([controllerModel.controller], true);
 
             if (intersects.length > 0) {
                 const intersectedMesh = intersects[0].object as THREE.Mesh;
                 let parentGroup: THREE.Group | null = null;
                 let current = intersectedMesh.parent;
                 
-                while (current && current !== controllerModel.controller) {
+                while (current) {
                     if (groupsToInteract.includes(current as THREE.Group)) {
                         parentGroup = current as THREE.Group;
                         break;
@@ -224,12 +190,7 @@ const ThreeDViewer: React.FC = () => {
                 }
 
                 if (parentGroup && parentGroup.visible) {
-                    // Special case: if hovering over controls, highlight the phone group
-                    if (parentGroup === controllerModel.controlElementsGroup) {
-                        applyHighlight(controllerModel.phoneGroup);
-                    } else {
-                        applyHighlight(parentGroup);
-                    }
+                    applyHighlight(parentGroup);
                 } else {
                     removeHighlight();
                 }
@@ -248,34 +209,25 @@ const ThreeDViewer: React.FC = () => {
             camera.updateProjectionMatrix();
             renderer.setSize(newWidth, newHeight);
         };
-
         window.addEventListener('resize', handleResize);
 
         return () => {
             window.removeEventListener('resize', handleResize);
             canvas.removeEventListener('pointermove', onPointerMove);
+            cancelAnimationFrame(animationFrameId);
             renderer.dispose();
             controls.dispose();
         };
     }, [isExploded, updateTargetPositions, isPhoneVisible, isControlsVisible]);
 
-    useEffect(() => {
-        const cleanup = setupScene();
-        return cleanup;
-    }, [setupScene]);
-
     const handleToggleExplosion = useCallback(() => {
-        setIsExploded(prev => {
-            const newState = !prev;
-            updateTargetPositions(newState);
-            return newState;
-        });
-    }, [updateTargetPositions]);
+        setIsExploded(prev => !prev);
+    }, []);
 
     const handleResetCamera = useCallback(() => {
-        if (controlsRef.current && cameraRef.current) {
+        if (controlsRef.current) {
             controlsRef.current.reset();
-            cameraRef.current.position.set(0, 1, 7);
+            controlsRef.current.object.position.set(0, 1, 7);
             controlsRef.current.target.set(0, 0.5, 0);
         }
     }, []);

@@ -258,11 +258,11 @@ export function createControllerModel(): ControllerGroups {
     const menuBtn = new THREE.Mesh(centerBtnGeo, centerBtnMat);
     menuBtn.rotation.x = Math.PI / 2;
     menuBtn.position.set(-0.35, -0.95, 0.1);
-    phoneGroup.add(menuBtn);
+    controlElementsGroup.add(menuBtn);
     
     const homeBtn = menuBtn.clone();
     homeBtn.position.set(0.35, -0.95, 0.1);
-    phoneGroup.add(homeBtn);
+    controlElementsGroup.add(homeBtn);
 
     // Add control group to the phone
     phoneGroup.add(controlElementsGroup);
