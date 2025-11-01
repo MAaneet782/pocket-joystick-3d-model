@@ -1,266 +1,263 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { cn } from '@/lib/utils';
 import { createControllerModel, ControllerGroups } from '@/utils/controller-model';
-import ModelControls from './ModelControls';
+import { cn } from '@/lib/utils';
 
-// Explosion offsets and speed for smooth transition
-const EXPLOSION_OFFSET_X = 2.5;
-const EXPLOSION_OFFSET_Y = 1.5;
-const EXPLOSION_OFFSET_Z = 1.0;
-const LERP_SPEED = 0.05; 
+interface ThreeDViewerProps {
+    view: 'default' | 'front' | 'back' | 'top' | 'side';
+    isExploded: boolean;
+    showPhone: boolean;
+    isRotating: boolean;
+    onLoadingComplete: () => void;
+}
 
-// Initial positions
-const INITIAL_LEFT_GRIP_POS = new THREE.Vector3(-2.3, -0.2, 0);
-const INITIAL_RIGHT_GRIP_POS = new THREE.Vector3(2.3, -0.2, 0);
-
-const targetPositions = {
-    phone: new THREE.Vector3(0, 0, 0),
-    leftGrip: INITIAL_LEFT_GRIP_POS.clone(),
-    rightGrip: INITIAL_RIGHT_GRIP_POS.clone(),
-    triggerGroup: new THREE.Vector3(0, 0, 0),
+const CAMERA_POSITIONS = {
+    default: new THREE.Vector3(0, 5, 12),
+    front: new THREE.Vector3(0, 2, 14),
+    back: new THREE.Vector3(0, 2, -14),
+    top: new THREE.Vector3(0, 15, 0.1),
+    side: new THREE.Vector3(14, 2, 0),
 };
 
-// Highlight Material
-const highlightMat = new THREE.MeshStandardMaterial({
-    color: 0xffa500, 
-    emissive: 0xffa500,
-    emissiveIntensity: 0.8,
-    toneMapped: false,
-    transparent: true,
-    opacity: 0.9
-});
-
-const ThreeDViewer: React.FC = () => {
+const ThreeDViewer: React.FC<ThreeDViewerProps> = ({ 
+    view, 
+    isExploded, 
+    showPhone, 
+    isRotating,
+    onLoadingComplete
+}) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const modelRef = useRef<ControllerGroups | null>(null);
-    const controlsRef = useRef<OrbitControls | null>(null);
-    
-    const [isExploded, setIsExploded] = React.useState(false);
-    const [isPhoneVisible, setIsPhoneVisible] = React.useState(true);
-    const [isControlsVisible, setIsControlsVisible] = React.useState(true);
+    const sceneRef = useRef<THREE.Scene | null>(null);
+    const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+    const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+    const controllerGroupsRef = useRef<ControllerGroups | null>(null);
+    const animationFrameRef = useRef<number>();
 
-    const updateTargetPositions = useCallback((exploded: boolean) => {
-        if (exploded) {
-            targetPositions.phone.set(0, 0, EXPLOSION_OFFSET_Z);
-            targetPositions.leftGrip.set(INITIAL_LEFT_GRIP_POS.x - EXPLOSION_OFFSET_X, INITIAL_LEFT_GRIP_POS.y, INITIAL_LEFT_GRIP_POS.z);
-            targetPositions.rightGrip.set(INITIAL_RIGHT_GRIP_POS.x + EXPLOSION_OFFSET_X, INITIAL_RIGHT_GRIP_POS.y, INITIAL_RIGHT_GRIP_POS.z);
-            targetPositions.triggerGroup.set(0, EXPLOSION_OFFSET_Y, 0);
-        } else {
-            targetPositions.phone.set(0, 0, 0);
-            targetPositions.leftGrip.copy(INITIAL_LEFT_GRIP_POS);
-            targetPositions.rightGrip.copy(INITIAL_RIGHT_GRIP_POS);
-            targetPositions.triggerGroup.set(0, 0, 0);
-        }
-    }, []);
+    // --- Initialization ---
+    const initThree = useCallback(() => {
+        if (!canvasRef.current) return;
 
-    useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const width = canvas.clientWidth;
-        const height = canvas.clientHeight;
-
+        
+        // Scene
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f0f0); // Light grey background
-        scene.fog = new THREE.Fog(0xf0f0f0, 10, 25);
+        scene.background = new THREE.Color(0x5a6c7d);
+        scene.fog = new THREE.Fog(0x5a6c7d, 15, 30);
+        sceneRef.current = scene;
 
-        const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000); // Tighter FOV
-        camera.position.set(0, 1.5, 8); 
+        // Camera
+        const aspect = canvas.clientWidth / canvas.clientHeight;
+        const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
+        camera.position.copy(CAMERA_POSITIONS.default);
+        camera.lookAt(0, 0, 0);
+        cameraRef.current = camera;
 
+        // Renderer
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-        renderer.setSize(width, height);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(canvas.clientWidth / 2, canvas.clientHeight / 2); // Start smaller for performance
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
+        rendererRef.current = renderer;
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.minDistance = 4;
-        controls.maxDistance = 15;
-        controls.target.set(0, 0.5, 0); 
-        controlsRef.current = controls;
+        // Lights
+        // Increased ambient light slightly to compensate for darker materials
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); 
+        scene.add(ambientLight);
 
-        // --- Post-processing for Bloom Effect ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 0.7, 0.2, 0.9); // Tuned bloom
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
+        // Main directional light (stronger)
+        const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        mainLight.position.set(10, 15, 10);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        mainLight.shadow.camera.near = 0.5;
+        mainLight.shadow.camera.far = 50;
+        mainLight.shadow.camera.left = -10;
+        mainLight.shadow.camera.right = 10;
+        mainLight.shadow.camera.top = 10;
+        mainLight.shadow.camera.bottom = -10;
+        scene.add(mainLight);
 
-        // --- Professional 3-Point Lighting ---
-        const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
-        keyLight.position.set(-5, 5, 5);
-        keyLight.castShadow = true;
-        keyLight.shadow.mapSize.width = 2048;
-        keyLight.shadow.mapSize.height = 2048;
-        scene.add(keyLight);
-
-        const fillLight = new THREE.DirectionalLight(0x88aaff, 0.8);
-        fillLight.position.set(5, 2, 5);
+        // Fill light (so shadows aren't pure black)
+        const fillLight = new THREE.DirectionalLight(0xa0c4ff, 1.0);
+        fillLight.position.set(-10, 8, -10);
         scene.add(fillLight);
 
-        const rimLight = new THREE.DirectionalLight(0xffaaff, 1.0);
-        rimLight.position.set(0, 3, -5);
+        // Rim light for highlights on edges
+        const rimLight = new THREE.PointLight(0x00C9FF, 1.5, 20);
+        rimLight.position.set(0, 10, -10);
         scene.add(rimLight);
-        
-        const groundPlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(50, 50),
-            new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9, metalness: 0.1 })
-        );
-        groundPlane.rotation.x = -Math.PI / 2;
-        groundPlane.position.y = -2;
-        groundPlane.receiveShadow = true;
-        scene.add(groundPlane);
 
-        const controllerModel = createControllerModel();
-        scene.add(controllerModel.controller);
-        modelRef.current = controllerModel;
-        
-        updateTargetPositions(isExploded);
+        // Ground
+        const groundGeo = new THREE.CircleGeometry(20, 64);
+        const groundMat = new THREE.ShadowMaterial({ opacity: 0.4 }); // Slightly darker shadow
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -3;
+        ground.receiveShadow = true;
+        scene.add(ground);
 
-        const raycaster = new THREE.Raycaster();
-        const pointer = new THREE.Vector2();
-        let currentHighlightedGroup: THREE.Group | null = null;
-        
-        const originalMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
-        const groupsToInteract = [
-            controllerModel.phoneGroup,
-            controllerModel.leftGrip,
-            controllerModel.rightGrip,
-            controllerModel.triggerGroup,
-        ];
+        // Grid (kept for aesthetic background)
+        const gridHelper = new THREE.GridHelper(20, 20, 0x00C9FF, 0x4a5568);
+        gridHelper.position.y = -2.95;
+        (gridHelper.material as THREE.Material).opacity = 0.3;
+        (gridHelper.material as THREE.Material).transparent = true;
+        scene.add(gridHelper);
 
-        groupsToInteract.forEach(group => {
-            group.traverse(child => {
-                if (child instanceof THREE.Mesh) originalMaterials.set(child, child.material);
-            });
-        });
+        // Create controller
+        const groups = createControllerModel();
+        controllerGroupsRef.current = groups;
+        scene.add(groups.controller);
 
-        const applyHighlight = (group: THREE.Group) => {
-            if (currentHighlightedGroup === group) return;
-            if (currentHighlightedGroup) removeHighlight();
-            group.traverse(child => {
-                if (child instanceof THREE.Mesh && originalMaterials.has(child)) {
-                    child.material = highlightMat;
-                }
-            });
-            currentHighlightedGroup = group;
-        };
+        onLoadingComplete();
+    }, [onLoadingComplete]);
 
-        const removeHighlight = () => {
-            if (currentHighlightedGroup) {
-                currentHighlightedGroup.traverse(child => {
-                    if (child instanceof THREE.Mesh && originalMaterials.has(child)) {
-                        child.material = originalMaterials.get(child)!;
-                    }
-                });
-                currentHighlightedGroup = null;
-            }
-        };
+    // --- Animation Loop ---
+    const animate = useCallback(() => {
+        if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
 
-        const onPointerMove = (event: PointerEvent) => {
-            const rect = canvas.getBoundingClientRect();
-            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        };
-        canvas.addEventListener('pointermove', onPointerMove);
+        if (isRotating && controllerGroupsRef.current) {
+            controllerGroupsRef.current.controller.rotation.y += 0.005;
+        }
 
-        let animationFrameId: number;
-        const animate = () => {
-            animationFrameId = requestAnimationFrame(animate);
-            controls.update();
-            
-            if (modelRef.current) {
-                modelRef.current.phoneGroup.position.lerp(targetPositions.phone, LERP_SPEED);
-                modelRef.current.leftGrip.position.lerp(targetPositions.leftGrip, LERP_SPEED);
-                modelRef.current.rightGrip.position.lerp(targetPositions.rightGrip, LERP_SPEED);
-                modelRef.current.triggerGroup.position.lerp(targetPositions.triggerGroup, LERP_SPEED);
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+        animationFrameRef.current = requestAnimationFrame(animate);
+    }, [isRotating]);
 
-                modelRef.current.phoneGroup.visible = isPhoneVisible;
-                modelRef.current.controlElementsGroup.visible = isControlsVisible;
-            }
-
-            raycaster.setFromCamera(pointer, camera);
-            const intersects = raycaster.intersectObjects([controllerModel.controller], true);
-
-            let parentGroup: THREE.Group | null = null;
-            if (intersects.length > 0) {
-                let current = intersects[0].object.parent;
-                while (current) {
-                    if (groupsToInteract.includes(current as THREE.Group)) {
-                        parentGroup = current as THREE.Group;
-                        break;
-                    }
-                    current = current.parent;
-                }
-            }
-            
-            if (parentGroup && parentGroup.visible) {
-                applyHighlight(parentGroup);
-            } else {
-                removeHighlight();
-            }
-
-            composer.render();
-        };
+    useEffect(() => {
+        initThree();
         animate();
 
-        const handleResize = () => {
-            const newWidth = canvas.clientWidth;
-            const newHeight = canvas.clientHeight;
-            camera.aspect = newWidth / newHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(newWidth, newHeight);
-            composer.setSize(newWidth, newHeight);
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+            if (rendererRef.current) {
+                rendererRef.current.dispose();
+            }
         };
-        window.addEventListener('resize', handleResize);
+    }, [initThree, animate]);
+
+    // --- Interaction Handlers (Mouse/Touch) ---
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const camera = cameraRef.current;
+        const controller = controllerGroupsRef.current?.controller;
+
+        if (!canvas || !camera || !controller) return;
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        const onMouseDown = (e: MouseEvent) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        };
+
+        const onMouseMove = (e: MouseEvent) => {
+            if (isDragging) {
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                // Rotation sensitivity adjustment
+                controller.rotation.y += deltaX * 0.005; 
+                controller.rotation.x += deltaY * 0.005;
+                
+                // Clamp X rotation to prevent flipping
+                controller.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, controller.rotation.x));
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        };
+
+        const onMouseUp = () => {
+            isDragging = false;
+        };
+
+        const onWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            // Zoom sensitivity adjustment
+            camera.position.z += e.deltaY * 0.005; 
+            camera.position.z = Math.max(6, Math.min(20, camera.position.z));
+        };
+
+        canvas.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        canvas.addEventListener('wheel', onWheel);
 
         return () => {
-            window.removeEventListener('resize', handleResize);
-            canvas.removeEventListener('pointermove', onPointerMove);
-            cancelAnimationFrame(animationFrameId);
-            renderer.dispose();
-            controls.dispose();
+            canvas.removeEventListener('mousedown', onMouseDown);
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            canvas.removeEventListener('wheel', onWheel);
         };
-    }, [isExploded, updateTargetPositions, isPhoneVisible, isControlsVisible]);
-
-    const handleToggleExplosion = useCallback(() => setIsExploded(prev => !prev), []);
-    const handleResetCamera = useCallback(() => {
-        if (controlsRef.current) {
-            controlsRef.current.reset();
-            controlsRef.current.object.position.set(0, 1.5, 8);
-            controlsRef.current.target.set(0, 0.5, 0);
-        }
     }, []);
-    const handleTogglePhoneVisibility = useCallback(() => setIsPhoneVisible(prev => !prev), []);
-    const handleToggleControlsVisibility = useCallback(() => setIsControlsVisible(prev => !prev), []);
+
+    // --- View/State Updates ---
+
+    // Handle Camera View changes
+    useEffect(() => {
+        const camera = cameraRef.current;
+        if (camera) {
+            const targetPosition = CAMERA_POSITIONS[view];
+            camera.position.copy(targetPosition);
+            camera.lookAt(0, 0, 0);
+        }
+    }, [view]);
+
+    // Handle Exploded View changes
+    useEffect(() => {
+        const groups = controllerGroupsRef.current;
+        if (groups) {
+            // Use a slightly smaller offset for a cleaner exploded view
+            const offset = isExploded ? 1.8 : 0; 
+            
+            groups.phoneGroup.position.z = offset;
+            groups.leftGrip.position.x = -2.2 - offset; 
+            groups.rightGrip.position.x = 2.2 + offset; 
+            groups.triggerGroup.position.y = offset;
+        }
+    }, [isExploded]);
+
+    // Handle Phone Visibility changes
+    useEffect(() => {
+        const groups = controllerGroupsRef.current;
+        if (groups) {
+            groups.phoneGroup.visible = showPhone;
+        }
+    }, [showPhone]);
+
+    // Handle Window Resize
+    useEffect(() => {
+        const handleResize = () => {
+            const canvas = canvasRef.current;
+            const camera = cameraRef.current;
+            const renderer = rendererRef.current;
+
+            if (canvas && camera && renderer) {
+                camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 w-full p-4">
-            <canvas
-                ref={canvasRef} 
-                id="canvas3d" 
-                className={cn("w-full h-[80vh] max-w-4xl border rounded-lg shadow-lg bg-background flex-grow")}
-            />
-            <div className="lg/w-1/4 w-full">
-                <ModelControls 
-                    isExploded={isExploded}
-                    onToggleExplosion={handleToggleExplosion}
-                    onResetCamera={handleResetCamera}
-                    isPhoneVisible={isPhoneVisible}
-                    onTogglePhoneVisibility={handleTogglePhoneVisibility}
-                    isControlsVisible={isControlsVisible}
-                    onToggleControlsVisibility={handleToggleControlsVisibility}
-                />
-            </div>
-        </div>
+        <canvas 
+            ref={canvasRef} 
+            id="canvas3d" 
+            className={cn(
+                "w-full h-[800px] block rounded-[20px] cursor-grab active:cursor-grabbing",
+                "bg-[radial-gradient(circle_at_center,_#4a5568_0%,_#2d3748_100%)]" // Darker background gradient
+            )}
+        />
     );
 };
 
