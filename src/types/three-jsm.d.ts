@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-declare module 'three/examples/jsm/controls/OrbitControls' {
+declare module 'three/examples/jsm/controls/OrbitControls.js' {
     export class OrbitControls extends THREE.EventDispatcher {
         constructor(object: THREE.Camera, domElement?: HTMLElement);
         
