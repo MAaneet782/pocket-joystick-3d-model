@@ -1,71 +1,65 @@
 import * as THREE from 'three';
 
-// --- Materials ---
-
-// Main Body/Grip Material (Matte Plastic)
+// --- Professional Materials ---
+const bodyMat = new THREE.MeshStandardMaterial({ 
+    color: 0x181818,
+    roughness: 0.5,
+    metalness: 0.1,
+});
 const gripMat = new THREE.MeshStandardMaterial({ 
-    color: 0x1a1a1a,
-    roughness: 0.6,
-    metalness: 0.1,
-    side: THREE.DoubleSide
+    color: 0x121212,
+    roughness: 0.8, // More matte for a rubberized feel
+    metalness: 0.0,
 });
-
-// Phone Body & Control Base Material
 const phoneMat = new THREE.MeshStandardMaterial({ 
-    color: 0x080808,
-    metalness: 0.8,
-    roughness: 0.2
+    color: 0x050505,
+    metalness: 0.9,
+    roughness: 0.1, // Glossy glass
 });
-
-// Screen Material
 const screenMat = new THREE.MeshStandardMaterial({ 
-    color: 0x4f4f9f, 
-    emissive: 0x4f4f9f, 
-    emissiveIntensity: 0.3,
-    metalness: 0.1,
-    roughness: 0.1
+    color: 0x60a5fa, 
+    emissive: 0x60a5fa, 
+    emissiveIntensity: 0.5,
+    toneMapped: false, // Important for bloom
 });
+const analogStickMat = new THREE.MeshStandardMaterial({ color: 0x101010, roughness: 0.7 });
+const dpadMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.1, roughness: 0.4 });
 
-// Analog Stick Material
-const analogStickMat = new THREE.MeshStandardMaterial({ color: 0x101010, roughness: 0.3 });
-
-// D-Pad Material
-const dpadMat = new THREE.MeshStandardMaterial({ color: 0x151515, metalness: 0.1, roughness: 0.5 });
-
-// --- Emissive (Glowing) Materials ---
-const ledStripMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-const leftAnalogGlowMat = new THREE.MeshBasicMaterial({ color: 0x99ff33 });
-const rightAnalogGlowMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+// --- Emissive Materials (for Bloom) ---
+const ledStripMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, toneMapped: false });
+const leftAnalogGlowMat = new THREE.MeshBasicMaterial({ color: 0x99ff33, toneMapped: false });
+const rightAnalogGlowMat = new THREE.MeshBasicMaterial({ color: 0xff3333, toneMapped: false });
 
 // --- Geometries ---
 const phoneGeo = new THREE.BoxGeometry(3.8, 1.9, 0.2);
 const screenGeo = new THREE.BoxGeometry(3.6, 1.7, 0.02);
-const analogBaseGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 32);
-const analogStickGeo = new THREE.SphereGeometry(0.32, 32, 16);
-const analogGlowGeo = new THREE.TorusGeometry(0.35, 0.05, 16, 32, Math.PI * 1.2);
-const dpadCrossGeo = new THREE.BoxGeometry(0.6, 0.2, 0.08);
-const buttonGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.08, 32);
-const ledStripGeo = new THREE.BoxGeometry(1.8, 0.08, 0.08);
+const analogBaseGeo = new THREE.CylinderGeometry(0.45, 0.4, 0.1, 32);
+const analogStickGeo = new THREE.CylinderGeometry(0.3, 0.28, 0.3, 32);
+const analogTopGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32);
+const analogGlowGeo = new THREE.TorusGeometry(0.35, 0.03, 16, 32, Math.PI * 1.4);
+const dpadBaseGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.05, 32);
+const dpadCrossGeo = new THREE.BoxGeometry(0.6, 0.18, 0.08);
+const buttonGeo = new THREE.CylinderGeometry(0.15, 0.14, 0.08, 32);
+const ledStripGeo = new THREE.BoxGeometry(1.8, 0.05, 0.05);
 
-// PlayStation-style button configuration
 const buttonsConfig = [
-    { x: 1.95, y: 0, color: 0xff3333 },    // Circle (Right, Red)
-    { x: 1.6, y: -0.35, color: 0x3399ff }, // Cross (Bottom, Blue)
-    { x: 1.25, y: 0, color: 0xff66ff },    // Square (Left, Pink)
-    { x: 1.6, y: 0.35, color: 0x33ff99 }   // Triangle (Top, Green)
+    { x: 1.95, y: 0, color: 0xff3333 },
+    { x: 1.6, y: -0.35, color: 0x3399ff },
+    { x: 1.25, y: 0, color: 0xff66ff },
+    { x: 1.6, y: 0.35, color: 0x33ff99 }
 ];
 
 const createGripShape = () => {
     const gripShape = new THREE.Shape();
     gripShape.moveTo(0, 1);
     gripShape.lineTo(0, 0.3);
-    gripShape.quadraticCurveTo(-0.2, 0, -0.3, -0.3);
-    gripShape.quadraticCurveTo(-0.4, -0.8, -0.2, -1.3);
+    gripShape.bezierCurveTo(-0.1, 0.1, -0.3, -0.2, -0.4, -0.5);
+    gripShape.bezierCurveTo(-0.5, -0.8, -0.3, -1.2, -0.2, -1.3);
     gripShape.lineTo(0.3, -1.3);
     gripShape.lineTo(0.3, 1);
     gripShape.lineTo(0, 1);
     
-    const extrudeSettings = { depth: 0.8, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 2 };
+    const extrudeSettings = { depth: 0.8, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.05, bevelSegments: 4 };
     return new THREE.ExtrudeGeometry(gripShape, extrudeSettings);
 };
 
@@ -97,14 +91,12 @@ export function createControllerModel(): ControllerGroups {
 
     // --- Grips ---
     const leftGripGeo = createGripShape();
-    const leftGripMesh = new THREE.Mesh(leftGripGeo, gripMat);
-    leftGripMesh.rotation.y = Math.PI / 2;
+    const leftGripMesh = new THREE.Mesh(leftGripGeo, bodyMat);
     leftGripMesh.castShadow = true;
     leftGrip.add(leftGripMesh);
     leftGrip.position.set(-2.3, -0.2, 0);
 
     const rightGripMesh = leftGripMesh.clone();
-    rightGripMesh.rotation.y = -Math.PI / 2;
     rightGrip.add(rightGripMesh);
     rightGrip.position.set(2.3, -0.2, 0);
 
@@ -120,16 +112,18 @@ export function createControllerModel(): ControllerGroups {
     rightGrip.add(rightLedStrip);
 
     // --- Left Controls ---
-    const leftAnalogBase = new THREE.Mesh(analogBaseGeo, phoneMat);
+    const leftAnalogBase = new THREE.Mesh(analogBaseGeo, bodyMat);
     leftAnalogBase.rotation.x = Math.PI / 2;
     leftAnalogBase.position.set(-1.6, 0.3, 0.1);
     controlElementsGroup.add(leftAnalogBase);
 
     const leftAnalogStick = new THREE.Mesh(analogStickGeo, analogStickMat);
-    leftAnalogStick.position.set(-1.6, 0.3, 0.25);
-    leftAnalogStick.scale.set(1, 1, 0.7);
+    leftAnalogStick.position.set(-1.6, 0.3, 0.2);
     leftAnalogStick.castShadow = true;
     controlElementsGroup.add(leftAnalogStick);
+    const leftAnalogTop = new THREE.Mesh(analogTopGeo, gripMat); // Rubberized top
+    leftAnalogTop.position.set(-1.6, 0.3, 0.35);
+    controlElementsGroup.add(leftAnalogTop);
 
     const leftAnalogGlow = new THREE.Mesh(analogGlowGeo, leftAnalogGlowMat);
     leftAnalogGlow.position.copy(leftAnalogStick.position);
@@ -137,6 +131,10 @@ export function createControllerModel(): ControllerGroups {
     controlElementsGroup.add(leftAnalogGlow);
 
     // --- D-Pad ---
+    const dpadBase = new THREE.Mesh(dpadBaseGeo, bodyMat);
+    dpadBase.rotation.x = Math.PI / 2;
+    dpadBase.position.set(-1.6, -0.4, 0.1);
+    controlElementsGroup.add(dpadBase);
     const dpadH = new THREE.Mesh(dpadCrossGeo, dpadMat);
     dpadH.position.set(-1.6, -0.4, 0.15);
     controlElementsGroup.add(dpadH);
@@ -146,7 +144,7 @@ export function createControllerModel(): ControllerGroups {
 
     // --- Right Controls (Buttons) ---
     buttonsConfig.forEach(btn => {
-        const button = new THREE.Mesh(buttonGeo, new THREE.MeshBasicMaterial({ color: btn.color }));
+        const button = new THREE.Mesh(buttonGeo, new THREE.MeshBasicMaterial({ color: btn.color, toneMapped: false }));
         button.rotation.x = Math.PI / 2;
         button.position.set(btn.x, btn.y, 0.15);
         controlElementsGroup.add(button);
@@ -158,17 +156,20 @@ export function createControllerModel(): ControllerGroups {
     controlElementsGroup.add(rightAnalogBase);
 
     const rightAnalogStick = leftAnalogStick.clone();
-    rightAnalogStick.position.set(1.6, -0.4, 0.25);
+    rightAnalogStick.position.set(1.6, -0.4, 0.2);
     controlElementsGroup.add(rightAnalogStick);
+    const rightAnalogTop = leftAnalogTop.clone();
+    rightAnalogTop.position.set(1.6, -0.4, 0.35);
+    controlElementsGroup.add(rightAnalogTop);
 
     const rightAnalogGlow = new THREE.Mesh(analogGlowGeo, rightAnalogGlowMat);
     rightAnalogGlow.position.copy(rightAnalogStick.position);
     rightAnalogGlow.rotation.z = -Math.PI / 1.5;
     controlElementsGroup.add(rightAnalogGlow);
 
-    // --- Top Triggers (Simplified) ---
+    // --- Top Triggers (Refined) ---
     const triggerGeo = new THREE.BoxGeometry(0.9, 0.3, 0.4);
-    const l1 = new THREE.Mesh(triggerGeo, gripMat);
+    const l1 = new THREE.Mesh(triggerGeo, bodyMat);
     l1.position.set(-2.2, 1.0, -0.2);
     l1.castShadow = true;
     triggerGroup.add(l1);

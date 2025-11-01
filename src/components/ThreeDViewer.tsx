@@ -30,6 +30,7 @@ const highlightMat = new THREE.MeshStandardMaterial({
     color: 0xffa500, 
     emissive: 0xffa500,
     emissiveIntensity: 0.8,
+    toneMapped: false,
     transparent: true,
     opacity: 0.9
 });
@@ -65,16 +66,19 @@ const ThreeDViewer: React.FC = () => {
         const height = canvas.clientHeight;
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x101010);
+        scene.background = new THREE.Color(0x111111); // Darker background
+        scene.fog = new THREE.Fog(0x111111, 10, 25);
 
-        const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-        camera.position.set(0, 1, 7); 
+        const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000); // Tighter FOV
+        camera.position.set(0, 1.5, 8); 
 
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
-        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -85,27 +89,35 @@ const ThreeDViewer: React.FC = () => {
 
         // --- Post-processing for Bloom Effect ---
         const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 1.0, 0.4, 0.85);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 0.7, 0.2, 0.9); // Tuned bloom
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
         composer.addPass(bloomPass);
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); 
-        directionalLight.position.set(5, 10, 7.5);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
+        // --- Professional 3-Point Lighting ---
+        const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        keyLight.position.set(-5, 5, 5);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 2048;
+        keyLight.shadow.mapSize.height = 2048;
+        scene.add(keyLight);
+
+        const fillLight = new THREE.DirectionalLight(0x88aaff, 0.8);
+        fillLight.position.set(5, 2, 5);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffaaff, 1.0);
+        rimLight.position.set(0, 3, -5);
+        scene.add(rimLight);
         
-        const plane = new THREE.Mesh(
-            new THREE.PlaneGeometry(20, 20),
-            new THREE.MeshStandardMaterial({ color: 0x222222 })
+        const groundPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(50, 50),
+            new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.9, metalness: 0.1 })
         );
-        plane.rotation.x = -Math.PI / 2;
-        plane.position.y = -2;
-        plane.receiveShadow = true;
-        scene.add(plane);
+        groundPlane.rotation.x = -Math.PI / 2;
+        groundPlane.position.y = -2;
+        groundPlane.receiveShadow = true;
+        scene.add(groundPlane);
 
         const controllerModel = createControllerModel();
         scene.add(controllerModel.controller);
@@ -223,7 +235,7 @@ const ThreeDViewer: React.FC = () => {
     const handleResetCamera = useCallback(() => {
         if (controlsRef.current) {
             controlsRef.current.reset();
-            controlsRef.current.object.position.set(0, 1, 7);
+            controlsRef.current.object.position.set(0, 1.5, 8);
             controlsRef.current.target.set(0, 0.5, 0);
         }
     }, []);
