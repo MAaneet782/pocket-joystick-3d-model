@@ -140,6 +140,7 @@ const ThreeDViewer: React.FC = () => {
             controllerModel.leftGrip,
             controllerModel.rightGrip,
             controllerModel.triggerGroup,
+            controllerModel.controlElementsGroup, // Include new group for interaction
         ];
 
         groupsToInteract.forEach(group => {
@@ -181,19 +182,29 @@ const ThreeDViewer: React.FC = () => {
 
         canvas.addEventListener('pointermove', onPointerMove);
 
+        const clock = new THREE.Clock();
+
         const animate = () => {
             requestAnimationFrame(animate);
             controls.update();
             
             if (modelRef.current) {
+                // Stylish float animation for exploded parts
+                if (isExploded) {
+                    const elapsedTime = clock.getElapsedTime();
+                    const floatOffset = Math.sin(elapsedTime * 2) * 0.05;
+                    targetPositions.leftGrip.y = INITIAL_LEFT_GRIP_POS.y + floatOffset;
+                    targetPositions.rightGrip.y = INITIAL_RIGHT_GRIP_POS.y - floatOffset;
+                    targetPositions.triggerGroup.y = EXPLOSION_OFFSET_Y + floatOffset;
+                }
+
                 modelRef.current.phoneGroup.position.lerp(targetPositions.phone, LERP_SPEED);
                 modelRef.current.leftGrip.position.lerp(targetPositions.leftGrip, LERP_SPEED);
                 modelRef.current.rightGrip.position.lerp(targetPositions.rightGrip, LERP_SPEED);
                 modelRef.current.triggerGroup.position.lerp(targetPositions.triggerGroup, LERP_SPEED);
 
                 modelRef.current.phoneGroup.visible = isPhoneVisible;
-                modelRef.current.leftControlsGroup.visible = isControlsVisible;
-                modelRef.current.rightControlsGroup.visible = isControlsVisible;
+                modelRef.current.controlElementsGroup.visible = isControlsVisible;
             }
 
             raycaster.setFromCamera(pointer, camera);
@@ -213,7 +224,12 @@ const ThreeDViewer: React.FC = () => {
                 }
 
                 if (parentGroup && parentGroup.visible) {
-                    applyHighlight(parentGroup);
+                    // Special case: if hovering over controls, highlight the phone group
+                    if (parentGroup === controllerModel.controlElementsGroup) {
+                        applyHighlight(controllerModel.phoneGroup);
+                    } else {
+                        applyHighlight(parentGroup);
+                    }
                 } else {
                     removeHighlight();
                 }
