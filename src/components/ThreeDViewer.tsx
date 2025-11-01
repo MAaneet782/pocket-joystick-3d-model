@@ -66,8 +66,8 @@ const ThreeDViewer: React.FC = () => {
         const height = canvas.clientHeight;
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111111); // Darker background
-        scene.fog = new THREE.Fog(0x111111, 10, 25);
+        scene.background = new THREE.Color(0xf0f0f0); // Light grey background
+        scene.fog = new THREE.Fog(0xf0f0f0, 10, 25);
 
         const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000); // Tighter FOV
         camera.position.set(0, 1.5, 8); 
@@ -112,7 +112,7 @@ const ThreeDViewer: React.FC = () => {
         
         const groundPlane = new THREE.Mesh(
             new THREE.PlaneGeometry(50, 50),
-            new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.9, metalness: 0.1 })
+            new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9, metalness: 0.1 })
         );
         groundPlane.rotation.x = -Math.PI / 2;
         groundPlane.position.y = -2;
@@ -249,7 +249,7 @@ const ThreeDViewer: React.FC = () => {
                 id="canvas3d" 
                 className={cn("w-full h-[80vh] max-w-4xl border rounded-lg shadow-lg bg-background flex-grow")}
             />
-            <div className="lg:w-1/4 w-full">
+            <div className="lg/w-1/4 w-full">
                 <ModelControls 
                     isExploded={isExploded}
                     onToggleExplosion={handleToggleExplosion}
