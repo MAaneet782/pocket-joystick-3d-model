@@ -1,6 +1,9 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { cn } from '@/lib/utils';
 import { createControllerModel, ControllerGroups } from '@/utils/controller-model';
 import ModelControls from './ModelControls';
@@ -11,9 +14,9 @@ const EXPLOSION_OFFSET_Y = 1.5;
 const EXPLOSION_OFFSET_Z = 1.0;
 const LERP_SPEED = 0.05; 
 
-// Initial positions defined in controller-model.ts
-const INITIAL_LEFT_GRIP_POS = new THREE.Vector3(-2.2, -0.2, 0);
-const INITIAL_RIGHT_GRIP_POS = new THREE.Vector3(2.2, -0.2, 0);
+// Initial positions
+const INITIAL_LEFT_GRIP_POS = new THREE.Vector3(-2.3, -0.2, 0);
+const INITIAL_RIGHT_GRIP_POS = new THREE.Vector3(2.3, -0.2, 0);
 
 const targetPositions = {
     phone: new THREE.Vector3(0, 0, 0),
@@ -22,15 +25,13 @@ const targetPositions = {
     triggerGroup: new THREE.Vector3(0, 0, 0),
 };
 
-// Highlight Material (Orange emissive)
+// Highlight Material
 const highlightMat = new THREE.MeshStandardMaterial({
     color: 0xffa500, 
     emissive: 0xffa500,
-    emissiveIntensity: 0.5,
-    metalness: 0.1,
-    roughness: 0.1,
+    emissiveIntensity: 0.8,
     transparent: true,
-    opacity: 0.8
+    opacity: 0.9
 });
 
 const ThreeDViewer: React.FC = () => {
@@ -41,7 +42,6 @@ const ThreeDViewer: React.FC = () => {
     const [isExploded, setIsExploded] = React.useState(false);
     const [isPhoneVisible, setIsPhoneVisible] = React.useState(true);
     const [isControlsVisible, setIsControlsVisible] = React.useState(true);
-
 
     const updateTargetPositions = useCallback((exploded: boolean) => {
         if (exploded) {
@@ -65,7 +65,7 @@ const ThreeDViewer: React.FC = () => {
         const height = canvas.clientHeight;
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a1a);
+        scene.background = new THREE.Color(0x101010);
 
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
         camera.position.set(0, 1, 7); 
@@ -74,31 +74,36 @@ const ThreeDViewer: React.FC = () => {
         renderer.setSize(width, height);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ReinhardToneMapping;
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.screenSpacePanning = false;
-        controls.minDistance = 3;
+        controls.minDistance = 4;
         controls.maxDistance = 15;
         controls.target.set(0, 0.5, 0); 
         controlsRef.current = controls;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); 
+        // --- Post-processing for Bloom Effect ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 1.0, 0.4, 0.85);
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
         scene.add(ambientLight);
-        const hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, 0.5);
-        scene.add(hemisphereLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0); 
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); 
         directionalLight.position.set(5, 10, 7.5);
         directionalLight.castShadow = true;
         scene.add(directionalLight);
         
-        const planeGeo = new THREE.PlaneGeometry(20, 20);
-        const planeMat = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide });
-        const plane = new THREE.Mesh(planeGeo, planeMat);
+        const plane = new THREE.Mesh(
+            new THREE.PlaneGeometry(20, 20),
+            new THREE.MeshStandardMaterial({ color: 0x222222 })
+        );
         plane.rotation.x = -Math.PI / 2;
-        plane.position.y = -1.5;
+        plane.position.y = -2;
         plane.receiveShadow = true;
         scene.add(plane);
 
@@ -122,16 +127,13 @@ const ThreeDViewer: React.FC = () => {
 
         groupsToInteract.forEach(group => {
             group.traverse(child => {
-                if (child instanceof THREE.Mesh) {
-                    originalMaterials.set(child, child.material);
-                }
+                if (child instanceof THREE.Mesh) originalMaterials.set(child, child.material);
             });
         });
 
         const applyHighlight = (group: THREE.Group) => {
             if (currentHighlightedGroup === group) return;
             if (currentHighlightedGroup) removeHighlight();
-
             group.traverse(child => {
                 if (child instanceof THREE.Mesh && originalMaterials.has(child)) {
                     child.material = highlightMat;
@@ -176,11 +178,9 @@ const ThreeDViewer: React.FC = () => {
             raycaster.setFromCamera(pointer, camera);
             const intersects = raycaster.intersectObjects([controllerModel.controller], true);
 
+            let parentGroup: THREE.Group | null = null;
             if (intersects.length > 0) {
-                const intersectedMesh = intersects[0].object as THREE.Mesh;
-                let parentGroup: THREE.Group | null = null;
-                let current = intersectedMesh.parent;
-                
+                let current = intersects[0].object.parent;
                 while (current) {
                     if (groupsToInteract.includes(current as THREE.Group)) {
                         parentGroup = current as THREE.Group;
@@ -188,17 +188,15 @@ const ThreeDViewer: React.FC = () => {
                     }
                     current = current.parent;
                 }
-
-                if (parentGroup && parentGroup.visible) {
-                    applyHighlight(parentGroup);
-                } else {
-                    removeHighlight();
-                }
+            }
+            
+            if (parentGroup && parentGroup.visible) {
+                applyHighlight(parentGroup);
             } else {
                 removeHighlight();
             }
 
-            renderer.render(scene, camera);
+            composer.render();
         };
         animate();
 
@@ -208,6 +206,7 @@ const ThreeDViewer: React.FC = () => {
             camera.aspect = newWidth / newHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(newWidth, newHeight);
+            composer.setSize(newWidth, newHeight);
         };
         window.addEventListener('resize', handleResize);
 
@@ -220,10 +219,7 @@ const ThreeDViewer: React.FC = () => {
         };
     }, [isExploded, updateTargetPositions, isPhoneVisible, isControlsVisible]);
 
-    const handleToggleExplosion = useCallback(() => {
-        setIsExploded(prev => !prev);
-    }, []);
-
+    const handleToggleExplosion = useCallback(() => setIsExploded(prev => !prev), []);
     const handleResetCamera = useCallback(() => {
         if (controlsRef.current) {
             controlsRef.current.reset();
@@ -231,24 +227,15 @@ const ThreeDViewer: React.FC = () => {
             controlsRef.current.target.set(0, 0.5, 0);
         }
     }, []);
-    
-    const handleTogglePhoneVisibility = useCallback(() => {
-        setIsPhoneVisible(prev => !prev);
-    }, []);
-
-    const handleToggleControlsVisibility = useCallback(() => {
-        setIsControlsVisible(prev => !prev);
-    }, []);
-
+    const handleTogglePhoneVisibility = useCallback(() => setIsPhoneVisible(prev => !prev), []);
+    const handleToggleControlsVisibility = useCallback(() => setIsControlsVisible(prev => !prev), []);
 
     return (
         <div className="flex flex-col lg:flex-row gap-6 w-full p-4">
             <canvas
                 ref={canvasRef} 
                 id="canvas3d" 
-                className={cn(
-                    "w-full h-[80vh] max-w-4xl border rounded-lg shadow-lg bg-background flex-grow"
-                )}
+                className={cn("w-full h-[80vh] max-w-4xl border rounded-lg shadow-lg bg-background flex-grow")}
             />
             <div className="lg:w-1/4 w-full">
                 <ModelControls 
