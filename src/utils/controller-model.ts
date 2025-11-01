@@ -60,6 +60,7 @@ const labelGeo = new THREE.CircleGeometry(0.14, 32);
 const triggerGeo = new THREE.BoxGeometry(0.9, 0.3, 0.25);
 const l2Geo = new THREE.BoxGeometry(0.9, 0.35, 0.3);
 const centerBtnGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 32);
+const lightGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.05, 16); // Added definition for lightGeo
 
 const buttonsConfig = [
     { x: 1.6, y: 0.35, color: 0x39FF14, label: 'A' },  // Bottom - Green
